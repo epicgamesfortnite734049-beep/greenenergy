@@ -1,7 +1,0 @@
-{
-  "name": "Serpent_Bravo Chatbot",
-  "description": "An AI chatbot dedicated to helping users understand and reduce their carbon footprints. It calculates CO2 emissions, explains environmental concepts simply, and provides personalized tips to reduce environmental impact in a friendly and motivating tone.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}
