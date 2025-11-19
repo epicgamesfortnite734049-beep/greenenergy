@@ -247,6 +247,9 @@ elif page == "AI":
         final_q = question if question.strip() else topic
 
         if st.button("Ask AI"):
-            model = genai.GenerativeModel("gemini-pro")
+
+            # ✨ UPDATED MODEL — NEWEST, FASTEST, BEST OPTION
+            model = genai.GenerativeModel("gemini-2.5-flash")
+
             res = model.generate_content(final_q)
             st.write(res.text)
