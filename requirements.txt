@@ -1,4 +1,7 @@
 streamlit
 google-generativeai
 matplotlib
-pandas
+speechrecognition
+gTTS
+pydub
+numpy
