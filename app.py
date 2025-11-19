@@ -1,217 +1,207 @@
 import streamlit as st
 import google.generativeai as genai
 import matplotlib.pyplot as plt
-import os
 
-# ------------------------------------------------------
-# PAGE CONFIG
-# ------------------------------------------------------
+# -----------------------------
+# CONFIG
+# -----------------------------
 st.set_page_config(
-    page_title="Green Energy & Carbon App",
-    page_icon="🌱",
-    layout="wide"
+    page_title="Carbon Footprint & Green Energy AI",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ------------------------------------------------------
-# CUSTOM UI (Aesthetic Light Theme + White Headings)
-# ------------------------------------------------------
-custom_css = """
-<style>
+# Dark theme styling
+st.markdown("""
+    <style>
+        body {
+            color: black;
+            background-color: #111;
+        }
+        .stApp {
+            background-color: #111;
+        }
+        h1, h2, h3, h4 {
+            color: white !important;
+        }
+        label, p, span, div {
+            color: white !important;
+        }
+        .stSlider label, .stNumberInput label {
+            color: white !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-.stApp {
-    background-color: #f2f7f5 !important;
-}
-
-/* White headings */
-h1, h2, h3, h4 {
-    color: white !important;
-}
-
-/* Card containers */
-.card {
-    background: white;
-    padding: 20px;
-    border-radius: 16px;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
-}
-
-/* Header Banner */
-.banner {
-    background: linear-gradient(135deg, #00c853, #009624);
-    padding: 18px;
-    border-radius: 12px;
-    margin-bottom: 25px;
-}
-
-/* Buttons */
-.stButton>button {
-    background-color: #00c853 !important;
-    color: white !important;
-    font-weight: bold;
-    border-radius: 10px;
-}
-
-textarea, input {
-    background-color: #fafafa !important;
-    border-radius: 6px !important;
-}
-
-</style>
-"""
-st.markdown(custom_css, unsafe_allow_html=True)
-
-# ------------------------------------------------------
+# -----------------------------
 # GEMINI CONFIG
-# ------------------------------------------------------
-api_key = os.getenv("GEMINI_API_KEY")
+# -----------------------------
+import os
+GEMINI_KEY = st.secrets.get("GEMINI_API_KEY", None)
 
-if api_key:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-pro")
-else:
-    model = None
+if GEMINI_KEY:
+    genai.configure(api_key=GEMINI_KEY)
 
 
-# ------------------------------------------------------
-# SIDEBAR
-# ------------------------------------------------------
-page = st.sidebar.radio(
+# -----------------------------
+# SIDEBAR NAVIGATION
+# -----------------------------
+page = st.sidebar.selectbox(
     "Navigation",
-    ["Home", "Carbon Footprint Calculator", "Green Energy AI"]
+    ["🏠 Home", 
+     "🌍 Carbon Footprint Calculator",
+     "⚡ Green Energy AI"]
 )
 
-# ------------------------------------------------------
-# HOME
-# ------------------------------------------------------
-if page == "Home":
-    st.markdown("<div class='banner'><h1>🌍 Green Energy & Carbon Footprint</h1></div>", unsafe_allow_html=True)
+# =====================================================================
+# PAGE 1 : HOME
+# =====================================================================
+if page == "🏠 Home":
+    st.title("🌱 Carbon Footprint Analyzer & Green Energy Assistant")
+    st.subheader("A Science Exhibition Project")
+    st.write("""
+    This app helps you calculate your **complete carbon footprint**, visualize it using **pie charts**,  
+    and learn about **renewable energy technologies** using AI-powered explanations.
+    """)
 
-    st.markdown(
-        """
-        <div class='card'>
-            <h3>Welcome!</h3>
-            <p>This project helps calculate carbon emissions for transport, electricity, LPG, and food—
-            perfect for Indian school science exhibitions.</p>
+    st.write("Use the menu on the left to begin!")
 
-            <p>It also includes an AI section to learn about Renewable Energy, Solar Power, Wind Energy, EVs,
-            and more!</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+# =====================================================================
+# PAGE 2 : CARBON FOOTPRINT CALCULATOR
+# =====================================================================
+elif page == "🌍 Carbon Footprint Calculator":
+    st.title("🌍 Full Carbon Footprint Calculator")
 
+    st.write("### 📝 Exhibition-Grade Detailed Questionnaire")
+    st.write("Answer the questions below to calculate your total emissions.")
 
-# ------------------------------------------------------
-# COMBINED CARBON FOOTPRINT CALCULATOR
-# ------------------------------------------------------
-elif page == "Carbon Footprint Calculator":
+    # --------------------------
+    # TRANSPORT
+    # --------------------------
+    st.header("🚗 Transportation")
+    km_daily = st.slider("How many KM do you travel per day (bike/scooter/car)?", 0, 150, 10)
+    fuel_type = st.selectbox("Fuel Type", ["Petrol", "Diesel", "Electric"])
+    note_transport = st.caption("Transport contributes 30–40% of personal carbon emissions in urban India.")
 
-    st.markdown("<div class='banner'><h1>🧮 Complete Carbon Footprint Calculator</h1></div>", unsafe_allow_html=True)
+    if fuel_type == "Petrol":
+        transport_emission = km_daily * 0.118
+    elif fuel_type == "Diesel":
+        transport_emission = km_daily * 0.134
+    else:
+        transport_emission = km_daily * 0.02  # EV grid emissions
+    
+    # --------------------------
+    # ELECTRICITY
+    # --------------------------
+    st.header("💡 Electricity Usage")
+    units_month = st.number_input("Monthly Electricity Consumption (in units)", 0, 2000, 150)
+    st.caption("India’s electricity grid emits ~0.82 kg CO₂ per kWh.")
+    electricity_emission = units_month * 0.82 / 30
 
-    st.markdown("<h3>Select & Enter Your Daily/Monthly Usage Below</h3>")
+    # --------------------------
+    # LPG
+    # --------------------------
+    st.header("🔥 Cooking (LPG)")
+    lpg_refills = st.slider("How many LPG cylinders do you use per year?", 0, 24, 6)
+    st.caption("Each LPG cylinder = 42.5 kg CO₂")
+    lpg_emission = (lpg_refills * 42.5) / 365
 
-    # ------ Transport Section ------
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("🚗 Transport Emissions")
+    # --------------------------
+    # AC USAGE
+    # --------------------------
+    st.header("❄ Air Conditioner Usage")
+    ac_hours = st.slider("Average AC usage per day (hours)", 0, 24, 4)
+    st.caption("AC contributes heavily due to high electricity consumption.")
+    ac_emission = ac_hours * 1.5 * 0.82  # 1.5 kW AC
 
-    km = st.number_input("Daily Travel Distance (km):", min_value=0.0)
-    transport_emission = km * 0.12   # Indian avg = 0.12 kg CO2 per km
+    # --------------------------
+    # WATER HEATER
+    # --------------------------
+    st.header("🚿 Water Heater (Geyser)")
+    geyser_hours = st.slider("Geyser usage per day (hours)", 0.0, 5.0, 0.5)
+    st.caption("Geyser = 2 kW load → major winter emission source.")
+    geyser_emission = geyser_hours * 2 * 0.82
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    # --------------------------
+    # WASTE GENERATION
+    # --------------------------
+    st.header("🗑 Waste Generation")
+    waste_kg = st.slider("Daily Waste Generated (kg)", 0.0, 5.0, 0.5)
+    st.caption("Organic waste emits methane, 28× more harmful than CO₂.")
+    waste_emission = waste_kg * 0.09
 
-    # ------ Electricity & LPG ------
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("⚡ Home Energy Emissions")
+    # --------------------------
+    # FOOD FOOTPRINT
+    # --------------------------
+    st.header("🍽 Food-Related Emissions")
+    food_choice = st.selectbox("Your usual diet?", 
+                               ["Vegetarian", "Eggs", "Chicken", "Fish", "Mixed Non-Veg"])
 
-    elec_units = st.number_input("Monthly Electricity Usage (Units/kWh):", min_value=0.0)
-    lpg = st.number_input("Monthly LPG Cylinders:", min_value=0.0)
-
-    electricity_emission = elec_units * 0.82   # India avg
-    lpg_emission = lpg * 2.75
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # ------ Food Emissions ------
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("🥗 Food Emissions (Common Indian Items)")
-
-    foods = {
-        "Rice": 2.7,
-        "Wheat Flour (Atta)": 1.4,
-        "Dal": 1.8,
-        "Vegetables": 0.5,
-        "Fruits": 0.7,
-        "Milk": 1.3,
-        "Paneer": 5.5,
-        "Eggs": 4.8,
-        "Chicken": 6.9,
-        "Mutton": 24.0,
-        "Beef": 27.0  # kept for scientific comparison
+    food_emit_map = {
+        "Vegetarian": 2.0,
+        "Eggs": 3.0,
+        "Chicken": 4.5,
+        "Fish": 5.5,
+        "Mixed Non-Veg": 6.5
     }
+    food_emission = food_emit_map[food_choice]
 
-    food_item = st.selectbox("Select Food Item:", list(foods.keys()))
-    qty = st.number_input("Quantity per Month (kg):", min_value=0.0)
+    # --------------------------------------------------
+    # TOTAL EMISSION
+    # --------------------------------------------------
+    total = (transport_emission + electricity_emission + lpg_emission +
+             ac_emission + geyser_emission + waste_emission + food_emission)
 
-    food_emission = qty * foods[food_item]
+    if st.button("Calculate My Carbon Footprint"):
+        st.success(f"### 🌎 Your Total Daily Carbon Footprint: **{total:.2f} kg CO₂/day**")
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # ------ Total & PIE CHART ------
-    if st.button("Calculate Total Carbon Footprint"):
-
-        total = transport_emission + electricity_emission + lpg_emission + food_emission
-
-        st.success(f"### 🌡 Your Total Monthly Carbon Emission: **{total:.2f} kg CO₂**")
-
-        labels = ["Transport", "Electricity", "LPG", "Food"]
-        values = [transport_emission, electricity_emission, lpg_emission, food_emission]
+        # PIE CHART VISUALIZATION
+        labels = ["Transport", "Electricity", "LPG", "AC", "Geyser", "Waste", "Food"]
+        values = [
+            transport_emission,
+            electricity_emission,
+            lpg_emission,
+            ac_emission,
+            geyser_emission,
+            waste_emission,
+            food_emission
+        ]
 
         fig, ax = plt.subplots()
-        ax.pie(values, labels=labels, autopct='%1.1f%%')
-        ax.set_title("Carbon Footprint Breakdown")
-
+        ax.pie(values, labels=labels, autopct="%1.1f%%")
+        ax.set_title("Carbon Emission Breakdown")
         st.pyplot(fig)
 
+# =====================================================================
+# PAGE 3 : GREEN ENERGY AI
+# =====================================================================
+elif page == "⚡ Green Energy AI":
+    st.title("⚡ AI Green Energy Assistant")
 
-# ------------------------------------------------------
-# GREEN ENERGY AI
-# ------------------------------------------------------
-elif page == "Green Energy AI":
-    st.markdown("<div class='banner'><h1>⚡ Green Energy AI Assistant</h1></div>", unsafe_allow_html=True)
+    if not GEMINI_KEY:
+        st.error("Gemini API Key not configured!")
+    else:
+        st.write("Ask anything about Green Energy and Sustainability!")
 
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
+        preset_topics = [
+            "How does solar power work?",
+            "Advantages of wind turbines",
+            "What is net metering?",
+            "How do electric vehicles reduce emissions?",
+            "Biogas plant for home – explain",
+            "Hydrogen fuel cells working principle",
+            "Geothermal energy in India",
+            "Battery storage and lithium-ion technology",
+            "How can schools become carbon neutral?",
+            "What is carbon trading?"
+        ]
 
-    st.write("Choose a topic or type your own question:")
+        topic = st.selectbox("Choose a topic", preset_topics)
+        q = st.text_area("Or type your own question:")
 
-    topics = [
-        "Solar Energy Basics",
-        "How do solar panels work?",
-        "Wind Energy in India",
-        "Hydropower generation process",
-        "What is green hydrogen?",
-        "EV (Electric Vehicle) advantages",
-        "Geothermal Energy",
-        "Biogas & Biofuel",
-        "Smart Grids",
-        "Future of Renewable Energy"
-    ]
+        ask = q if q.strip() != "" else topic
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        topic = st.selectbox("Popular Topics:", topics)
-
-    query = st.text_area("Ask any question:")
-
-    final_query = query if query.strip() else topic
-
-    if st.button("Ask Gemini"):
-        if not api_key:
-            st.error("❌ GEMINI_API_KEY is missing.")
-        else:
-            response = model.generate_content(final_query)
-            st.markdown("### ✨ Answer:")
-            st.write(response.text)
-
-    st.markdown("</div>", unsafe_allow_html=True)
+        if st.button("Ask AI"):
+            model = genai.GenerativeModel("gemini-pro")
+            res = model.generate_content(ask)
+            st.write(res.text)
