@@ -163,3 +163,4 @@ elif page == "Green Energy AI":
             response = model.generate_content(question)
             st.markdown("### Answer:")
             st.write(response.text)
+
