@@ -120,7 +120,7 @@ elif page == "Carbon Calculator":
         st.markdown("</div>", unsafe_allow_html=True)
 
 # ----------------------------
-# FOOD EMISSIONS (NO BEEF)
+# FOOD EMISSIONS (BEEF ADDED BACK)
 # ----------------------------
 elif page == "Food Emission":
     st.markdown("<div class='banner'><h1>🥗 Food Emission Calculator</h1></div>", unsafe_allow_html=True)
@@ -133,7 +133,7 @@ elif page == "Food Emission":
         "Milk": 1.3,
         "Eggs": 4.8,
         "Chicken": 6.9,
-        # ❌ Beef Removed
+        "Beef": 27.0  # ✔ ADDED BACK
     }
 
     st.markdown("<div class='card'>", unsafe_allow_html=True)
