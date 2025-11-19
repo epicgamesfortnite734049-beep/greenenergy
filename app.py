@@ -1,23 +1,23 @@
 import streamlit as st
 import google.generativeai as genai
+import matplotlib.pyplot as plt
 import os
 
-# ----------------------------
-# PAGE SETTINGS
-# ----------------------------
+# ------------------------------------------------------
+# PAGE CONFIG
+# ------------------------------------------------------
 st.set_page_config(
     page_title="Green Energy & Carbon App",
     page_icon="🌱",
     layout="wide"
 )
 
-# ----------------------------
-# CUSTOM CSS (Aesthetic Light UI + White Headings)
-# ----------------------------
+# ------------------------------------------------------
+# CUSTOM UI (Aesthetic Light Theme + White Headings)
+# ------------------------------------------------------
 custom_css = """
 <style>
 
-/* Full white background for aesthetic look */
 .stApp {
     background-color: #f2f7f5 !important;
 }
@@ -27,21 +27,21 @@ h1, h2, h3, h4 {
     color: white !important;
 }
 
-/* Section cards */
+/* Card containers */
 .card {
-    background: #ffffff;
-    padding: 22px;
+    background: white;
+    padding: 20px;
     border-radius: 16px;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
 }
 
-/* Heading banner bar */
+/* Header Banner */
 .banner {
     background: linear-gradient(135deg, #00c853, #009624);
-    padding: 16px;
+    padding: 18px;
     border-radius: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 /* Buttons */
@@ -49,10 +49,9 @@ h1, h2, h3, h4 {
     background-color: #00c853 !important;
     color: white !important;
     font-weight: bold;
-    border-radius: 8px !important;
+    border-radius: 10px;
 }
 
-/* Inputs */
 textarea, input {
     background-color: #fafafa !important;
     border-radius: 6px !important;
@@ -62,9 +61,9 @@ textarea, input {
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# ----------------------------
-# GEMINI API CONFIG
-# ----------------------------
+# ------------------------------------------------------
+# GEMINI CONFIG
+# ------------------------------------------------------
 api_key = os.getenv("GEMINI_API_KEY")
 
 if api_key:
@@ -73,17 +72,18 @@ if api_key:
 else:
     model = None
 
-# ----------------------------
-# SIDEBAR NAVIGATION
-# ----------------------------
+
+# ------------------------------------------------------
+# SIDEBAR
+# ------------------------------------------------------
 page = st.sidebar.radio(
     "Navigation",
-    ["Home", "Carbon Calculator", "Food Emission", "Green Energy AI"]
+    ["Home", "Carbon Footprint Calculator", "Green Energy AI"]
 )
 
-# ----------------------------
-# HOME PAGE
-# ----------------------------
+# ------------------------------------------------------
+# HOME
+# ------------------------------------------------------
 if page == "Home":
     st.markdown("<div class='banner'><h1>🌍 Green Energy & Carbon Footprint</h1></div>", unsafe_allow_html=True)
 
@@ -91,74 +91,127 @@ if page == "Home":
         """
         <div class='card'>
             <h3>Welcome!</h3>
-            <p>This app helps you calculate carbon emissions and learn more about clean green energy.</p>
-            <p>Use the navigation menu to get started.</p>
+            <p>This project helps calculate carbon emissions for transport, electricity, LPG, and food—
+            perfect for Indian school science exhibitions.</p>
+
+            <p>It also includes an AI section to learn about Renewable Energy, Solar Power, Wind Energy, EVs,
+            and more!</p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-# ----------------------------
-# CARBON FOOTPRINT CALCULATOR
-# ----------------------------
-elif page == "Carbon Calculator":
-    st.markdown("<div class='banner'><h1>🧮 Carbon Footprint Calculator</h1></div>", unsafe_allow_html=True)
 
+# ------------------------------------------------------
+# COMBINED CARBON FOOTPRINT CALCULATOR
+# ------------------------------------------------------
+elif page == "Carbon Footprint Calculator":
+
+    st.markdown("<div class='banner'><h1>🧮 Complete Carbon Footprint Calculator</h1></div>", unsafe_allow_html=True)
+
+    st.markdown("<h3>Select & Enter Your Daily/Monthly Usage Below</h3>")
+
+    # ------ Transport Section ------
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.write("Enter your usage below to estimate carbon emissions.")
+    st.subheader("🚗 Transport Emissions")
+
+    km = st.number_input("Daily Travel Distance (km):", min_value=0.0)
+    transport_emission = km * 0.12   # Indian avg = 0.12 kg CO2 per km
+
     st.markdown("</div>", unsafe_allow_html=True)
 
-    with st.container():
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        km = st.number_input("Daily travel (km):", min_value=0.0)
-        electricity = st.number_input("Monthly electricity units:", min_value=0.0)
-        lpg = st.number_input("LPG cylinders per month:", min_value=0.0)
+    # ------ Electricity & LPG ------
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.subheader("⚡ Home Energy Emissions")
 
-        if st.button("Calculate Emissions"):
-            total = (km * 0.12) + (electricity * 0.82) + (lpg * 2.75)
-            st.success(f"Your estimated monthly CO₂ emission is **{total:.2f} kg**")
-        st.markdown("</div>", unsafe_allow_html=True)
+    elec_units = st.number_input("Monthly Electricity Usage (Units/kWh):", min_value=0.0)
+    lpg = st.number_input("Monthly LPG Cylinders:", min_value=0.0)
 
-# ----------------------------
-# FOOD EMISSIONS (BEEF ADDED BACK)
-# ----------------------------
-elif page == "Food Emission":
-    st.markdown("<div class='banner'><h1>🥗 Food Emission Calculator</h1></div>", unsafe_allow_html=True)
+    electricity_emission = elec_units * 0.82   # India avg
+    lpg_emission = lpg * 2.75
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # ------ Food Emissions ------
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.subheader("🥗 Food Emissions (Common Indian Items)")
 
     foods = {
         "Rice": 2.7,
+        "Wheat Flour (Atta)": 1.4,
         "Dal": 1.8,
         "Vegetables": 0.5,
         "Fruits": 0.7,
         "Milk": 1.3,
+        "Paneer": 5.5,
         "Eggs": 4.8,
         "Chicken": 6.9,
-        "Beef": 27.0  # ✔ ADDED BACK
+        "Mutton": 24.0,
+        "Beef": 27.0  # kept for scientific comparison
     }
 
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    food = st.selectbox("Select a food item:", list(foods.keys()))
-    qty = st.number_input("Quantity (kg):", min_value=0.0)
+    food_item = st.selectbox("Select Food Item:", list(foods.keys()))
+    qty = st.number_input("Quantity per Month (kg):", min_value=0.0)
 
-    if st.button("Calculate Food Emission"):
-        emission = qty * foods[food]
-        st.success(f"{food} produces **{emission:.2f} kg CO₂** for {qty} kg.")
+    food_emission = qty * foods[food_item]
+
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ----------------------------
-# GREEN ENERGY KNOWLEDGE (GEMINI)
-# ----------------------------
+    # ------ Total & PIE CHART ------
+    if st.button("Calculate Total Carbon Footprint"):
+
+        total = transport_emission + electricity_emission + lpg_emission + food_emission
+
+        st.success(f"### 🌡 Your Total Monthly Carbon Emission: **{total:.2f} kg CO₂**")
+
+        labels = ["Transport", "Electricity", "LPG", "Food"]
+        values = [transport_emission, electricity_emission, lpg_emission, food_emission]
+
+        fig, ax = plt.subplots()
+        ax.pie(values, labels=labels, autopct='%1.1f%%')
+        ax.set_title("Carbon Footprint Breakdown")
+
+        st.pyplot(fig)
+
+
+# ------------------------------------------------------
+# GREEN ENERGY AI
+# ------------------------------------------------------
 elif page == "Green Energy AI":
-    st.markdown("<div class='banner'><h1>⚡ Ask Gemini About Green Energy</h1></div>", unsafe_allow_html=True)
+    st.markdown("<div class='banner'><h1>⚡ Green Energy AI Assistant</h1></div>", unsafe_allow_html=True)
 
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    query = st.text_area("Ask anything related to clean/green energy:")
+
+    st.write("Choose a topic or type your own question:")
+
+    topics = [
+        "Solar Energy Basics",
+        "How do solar panels work?",
+        "Wind Energy in India",
+        "Hydropower generation process",
+        "What is green hydrogen?",
+        "EV (Electric Vehicle) advantages",
+        "Geothermal Energy",
+        "Biogas & Biofuel",
+        "Smart Grids",
+        "Future of Renewable Energy"
+    ]
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        topic = st.selectbox("Popular Topics:", topics)
+
+    query = st.text_area("Ask any question:")
+
+    final_query = query if query.strip() else topic
 
     if st.button("Ask Gemini"):
         if not api_key:
-            st.error("❌ GEMINI_API_KEY not configured. Set it in Streamlit Secrets.")
+            st.error("❌ GEMINI_API_KEY is missing.")
         else:
-            response = model.generate_content(query)
-            st.markdown("### Answer:")
+            response = model.generate_content(final_query)
+            st.markdown("### ✨ Answer:")
             st.write(response.text)
+
     st.markdown("</div>", unsafe_allow_html=True)
