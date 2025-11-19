@@ -1,17 +1,14 @@
 # ------------------------------------------------------------
-# GreenEnergy Streamlit App (Dark Mode Edition)
+# GreenEnergy Streamlit App (Dark Mode + Black Text Version)
 # ------------------------------------------------------------
-# • Beautiful neon-green dark UI
-# • Glassmorphism cards
-# • Fully working Gemini integration
-# • Offline fallback knowledge
-# • Cleaner layout, animations, shadows
+# • Dark background
+# • Black text everywhere
+# • Updated UI styling
 # ------------------------------------------------------------
 
 import os
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
 # Try Gemini import
 GEMINI_CLIENT_AVAILABLE = False
@@ -23,7 +20,7 @@ except:
 
 
 # ------------------------------------------------------------
-# Dark Mode App Theme
+# Page Config
 # ------------------------------------------------------------
 st.set_page_config(
     page_title="GreenEnergy Suite",
@@ -31,13 +28,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# Inject DARK MODE CSS
+# ------------------------------------------------------------
+# DARK BACKGROUND + BLACK TEXT
+# ------------------------------------------------------------
 st.markdown("""
 <style>
-/* Background gradient */
+/* Dark background */
 [data-testid="stAppViewContainer"] {
     background: radial-gradient(circle at top, #0f2027, #07161c 60%, #000000 100%);
-    color: #e0e9e7;
 }
 
 /* Sidebar */
@@ -45,38 +43,32 @@ st.markdown("""
     background: linear-gradient(180deg, #0f2027, #0d1b21);
 }
 
-/* Sidebar text */
-[data-testid="stSidebar"] * {
-    color: #d2e6d7 !important;
+/* Black text everywhere */
+*, body, label, p, div, span, .stMarkdown, .stText, .markdown-text-container {
+    color: black !important;
 }
 
 /* Headings */
-h1, h2, h3 {
-    color: #99ffcc !important;
+h1, h2, h3, h4 {
+    color: black !important;
     font-weight: 700;
 }
 
-/* Glassmorphism Card */
+/* Glassmorphism Cards */
 .card {
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(8px);
     border-radius: 18px;
     padding: 25px;
     margin-top: 20px;
-    box-shadow: 0 0 20px rgba(0,255,150,0.08);
-}
-
-/* Text */
-body, p, label {
-    color: #d9f8e6 !important;
 }
 
 /* Buttons */
 .stButton > button {
     background: linear-gradient(90deg, #00ff99, #00cc88);
     padding: 10px 20px;
-    color: #000;
+    color: black !important;
     border-radius: 10px;
     border: none;
     font-weight: 600;
@@ -87,15 +79,15 @@ body, p, label {
     background: linear-gradient(90deg, #33ffbb, #00e699);
 }
 
-/* Input fields */
+/* Inputs */
 input, textarea, select {
-    background: rgba(255,255,255,0.08) !important;
-    color: #eafff4 !important;
+    background: rgba(255,255,255,0.85) !important;
+    color: black !important;
 }
 
-/* DataFrames table */
+/* Table text */
 .dataframe {
-    color: white !important;
+    color: black !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -121,40 +113,34 @@ EMISSION_FACTORS = {
 
 
 # ------------------------------------------------------------
-# Offline Knowledge Base
+# Local Knowledge Base
 # ------------------------------------------------------------
 LOCAL_KB = {
     "renewable energy": (
-        "Renewable energy includes sources such as solar, wind, hydro, and geothermal. "
-        "They replenish naturally and have extremely low carbon output."
+        "Renewable energy includes solar, wind, hydro, and geothermal sources."
     ),
     "solar panel": (
-        "Solar panels convert sunlight into electricity. "
-        "Their efficiency depends on angle, temperature, and irradiance."
+        "Solar panels convert sunlight into usable electricity."
     ),
     "reduce electricity": (
-        "Use LED lights, energy-efficient appliances, natural ventilation, and unplug standby devices."
+        "Use LED bulbs, energy-efficient appliances, and unplug devices."
     ),
     "carbon footprint": (
-        "A carbon footprint measures the total greenhouse gases emitted by a person or activity."
+        "Carbon footprint = total greenhouse gases produced by an activity."
     ),
 }
 
 
-def local_answer(q: str) -> str:
+def local_answer(q):
     q = q.lower()
     for k in LOCAL_KB:
         if k in q:
             return LOCAL_KB[k]
-
-    return (
-        "I don’t have an exact offline answer for this. Try asking about:\n"
-        "• Renewable energy\n• Solar panels\n• Electricity saving\n• Carbon footprint"
-    )
+    return "No exact offline answer found. Try asking about renewable energy, solar panels, or electricity saving."
 
 
 # ------------------------------------------------------------
-# Gemini Query (safe)
+# Gemini Query
 # ------------------------------------------------------------
 def query_gemini(question, api_key=None):
     key = api_key or os.getenv("GEMINI_API_KEY")
@@ -163,7 +149,7 @@ def query_gemini(question, api_key=None):
         return "⚠️ No Gemini API key provided."
 
     if not GEMINI_CLIENT_AVAILABLE:
-        return "⚠️ Gemini client not installed. Add `google-generativeai` to requirements."
+        return "⚠️ Gemini library missing."
 
     try:
         genai.configure(api_key=key)
@@ -178,27 +164,22 @@ def query_gemini(question, api_key=None):
 
 
 # ------------------------------------------------------------
-# PAGE FUNCTIONS
+# Pages
 # ------------------------------------------------------------
 def home_page():
-    st.title("⚡ GreenEnergy – Dark Mode Edition")
+    st.title("⚡ GreenEnergy – Dark Mode (Black Text Edition)")
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("""
-    ### Welcome to the GreenEnergy App  
-    Experience a futuristic carbon-awareness dashboard with:
-    - 🧮 Smart Carbon Emission Calculator  
-    - 💡 AI Knowledge (Gemini + Offline)  
-    - 📤 CSV Bulk Calculator  
-    - 🌑 Fully redesigned dark interface  
-
-    Let's make the world greener — one click at a time. 🌱
+    ### Welcome to GreenEnergy  
+    - Carbon emission calculator  
+    - AI knowledge (Gemini + Offline)  
+    - CSV bulk calculator  
     """)
     st.markdown('</div>', unsafe_allow_html=True)
 
 
 def calculator_page():
     st.title("🧮 Carbon Emission Calculator")
-
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
     st.header("Transport")
@@ -206,7 +187,7 @@ def calculator_page():
     km = st.number_input("Distance (km)", 0.0)
 
     if mode == "Car":
-        fuel = st.selectbox("Fuel type", ["petrol", "diesel"])
+        fuel = st.selectbox("Fuel Type", ["petrol", "diesel"])
         factor = EMISSION_FACTORS[f"car_{fuel}"]
     elif mode == "Motorbike":
         factor = EMISSION_FACTORS["motorbike"]
@@ -218,57 +199,55 @@ def calculator_page():
         factor = EMISSION_FACTORS["flight_short"] if km <= 1500 else EMISSION_FACTORS["flight_long"]
 
     transport = km * factor
-    st.write(f"Transport emissions: **{transport:.2f} kg CO₂e**")
+
+    st.write(f"Transport: **{transport:.2f} kg CO₂e**")
 
     st.header("Electricity")
-    kwh = st.number_input("Electricity usage (kWh/month)", 0.0)
+    kwh = st.number_input("Electricity (kWh)", 0.0)
     elec = kwh * EMISSION_FACTORS["electricity"]
-    st.write(f"Electricity emissions: **{elec:.2f} kg CO₂e**")
+    st.write(f"Electricity: **{elec:.2f} kg CO₂e**")
 
     st.header("Food")
     beef = st.number_input("Beef (kg)", 0.0)
     poultry = st.number_input("Poultry (kg)", 0.0)
     veg = st.number_input("Vegetables (kg)", 0.0)
-    food = (beef * 27) + (poultry * 6.9) + (veg * 2)
+    food = beef * 27 + poultry * 6.9 + veg * 2
 
-    st.write(f"Food emissions: **{food:.2f} kg CO₂e**")
+    st.write(f"Food: **{food:.2f} kg CO₂e**")
 
     st.header("Waste")
     waste = st.number_input("Waste (kg)", 0.0)
-    waste_em = waste * EMISSION_FACTORS["waste"]
+    waste_em = waste * 0.45
 
-    st.write(f"Waste emissions: **{waste_em:.2f} kg CO₂e**")
+    st.write(f"Waste: **{waste_em:.2f} kg CO₂e**")
 
     total = transport + elec + food + waste_em
-    st.success(f"🌍 Total Monthly Emissions: **{total:.2f} kg CO₂e**")
+    st.success(f"🌍 **Total: {total:.2f} kg CO₂e**")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
 
 def knowledge_page():
-    st.title("💡 Green Energy Knowledge (AI + Offline)")
+    st.title("💡 Green Energy Knowledge")
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    question = st.text_area("Your question:", height=120)
+    question = st.text_area("Ask your question:", height=120)
 
-    st.subheader("Optional: Temporary Gemini API Key")
-    temp_key = st.text_input("Enter API Key (not saved):", type="password")
+    temp_key = st.text_input("Gemini API Key (optional):", type="password")
 
     col1, col2 = st.columns(2)
 
-    if col1.button("🌑 Offline Answer"):
-        st.write("### Offline Response")
+    if col1.button("Offline Answer"):
         st.write(local_answer(question))
 
-    if col2.button("⚡ Gemini Answer"):
-        st.write("### Gemini Response")
+    if col2.button("Gemini Answer"):
         st.write(query_gemini(question, api_key=temp_key))
 
     st.markdown('</div>', unsafe_allow_html=True)
 
 
 def upload_page():
-    st.title("📤 Bulk CSV Carbon Calculator")
+    st.title("📤 Bulk CSV Calculator")
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
     file = st.file_uploader("Upload CSV", type=["csv"])
@@ -280,13 +259,13 @@ def upload_page():
         results = []
         for _, row in df.iterrows():
             act = row["activity"].lower()
-            value = float(row["value"])
+            val = float(row["value"])
             factor = EMISSION_FACTORS.get(act, 0)
-            results.append({"activity": act, "value": value, "emissions": value * factor})
+            results.append({"activity": act, "value": val, "emissions": val * factor})
 
         out = pd.DataFrame(results)
         st.write(out)
-        st.success(f"Total Emissions: {out['emissions'].sum():.2f} kg CO₂e")
+        st.success(f"Total: {out['emissions'].sum():.2f} kg CO₂e")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -295,22 +274,18 @@ def about_page():
     st.title("ℹ️ About")
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.write("""
-    **GreenEnergy Dark Mode Edition**  
-    Built with Streamlit, Gemini AI, and offline knowledge features.
+    GreenEnergy Dark Mode with Black Text.  
+    Add this to requirements:
+    - google-generativeai==0.5.2
 
-    **Setup for Gemini:**
-    1. Add to `requirements.txt`:  
-       `google-generativeai==0.5.2`
-    2. Add Streamlit Cloud Secret:  
-       `GEMINI_API_KEY = your_api_key`
-
-    Enjoy the futuristic interface! ⚡🌱
+    Add secret in Streamlit Cloud:
+    `GEMINI_API_KEY = your_key`
     """)
     st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------
-# NAVIGATION
+# Navigation
 # ------------------------------------------------------------
 pages = {
     "Home": home_page,
