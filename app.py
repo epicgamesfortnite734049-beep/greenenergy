@@ -441,3 +441,29 @@ elif page == "About":
         - Build real solutions for climate change  
         - Create a greener future for India and the world  
     """)
+    # ================================
+# SIDEBAR NAVIGATION (UPDATED)
+# ================================
+if "page" not in st.session_state:
+    st.session_state["page"] = "Home"
+
+with st.sidebar:
+    # Title ABOVE buttons
+    st.markdown("<div class='sidebar-title'>🌱 Green Energy AI</div>", unsafe_allow_html=True)
+
+    # Divider line (optional)
+    st.markdown("<hr style='border: 1px solid #00ff8c33;'>", unsafe_allow_html=True)
+
+    # Sidebar Buttons
+    def sidebar_button(name, label):
+        selected_class = "selected-btn" if st.session_state["page"] == name else "sidebar-btn"
+        if st.button(label, key=name):
+            st.session_state["page"] = name
+        st.markdown(f"<div class='{selected_class}'>{label}</div>", unsafe_allow_html=True)
+
+    sidebar_button("Home", "🏠 Home")
+    sidebar_button("Carbon", "🌍 Carbon Calculator")
+    sidebar_button("AI", "⚡ Green Energy AI Assistant")
+    sidebar_button("About", "ℹ About This App")
+
+
