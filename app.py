@@ -3,7 +3,6 @@ import google.generativeai as genai
 import matplotlib.pyplot as plt
 import speech_recognition as sr
 from gtts import gTTS
-import base64
 from io import BytesIO
 import os
 
@@ -24,232 +23,213 @@ if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
 
 # -----------------------------
-# DARK THEME + NAVBAR (unchanged)
+# MINIMAL PREMIUM (B1) THEME for Home
 # -----------------------------
 st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root{
-            --neon:#00ff85;
-            --neon-2:#00c853;
-            --card-bg: rgba(255,255,255,0.03);
+        :root {
+            --bg: #0b0d0f;
+            --card: rgba(255,255,255,0.03);
+            --glass-border: rgba(255,255,255,0.06);
+            --accent: #66e39f;
+            --muted: #bcded0;
+        }
+        html, body, .stApp {
+            background: linear-gradient(180deg, #070809 0%, #0b0d0f 100%) !important;
+            color: #e9f8f0 !important;
+            font-family: 'Inter', sans-serif;
         }
 
-        .stApp { background-color: #060709 !important; color: #eafaf1 !important; }
-        body, label, p, span, div { color: #eafaf1 !important; }
-        h1, h2, h3, h4 { color: #eafaf1 !important; font-weight: 700; }
-
-        /* NEW AESTHETIC NAVBAR */
+        /* Top navbar */
         .cool-navbar {
-            background: linear-gradient(90deg, rgba(0,0,0,0.9), rgba(10,10,10,0.8));
-            border-radius: 14px;
-            padding: 10px 18px;
-            margin-bottom: 22px;
-            box-shadow: 0 8px 40px rgba(0,200,120,0.06);
-            display: flex;
-            justify-content: center;
-            gap: 18px;
-            align-items: center;
-        }
-
-        .nav-button {
-            background-color: rgba(255,255,255,0.03);
-            padding: 8px 22px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
             border-radius: 12px;
-            color: var(--neon) !important;
-            font-size: 16px;
-            font-weight: 600;
-            border: 1px solid rgba(0,200,120,0.08);
-            transition: transform 0.18s ease, box-shadow 0.18s ease;
-            backdrop-filter: blur(4px);
+            padding: 8px 14px;
+            margin-bottom: 20px;
+            display:flex;
+            justify-content:center;
+            gap:12px;
+            align-items:center;
+            border: 1px solid rgba(255,255,255,0.02);
+            box-shadow: 0 6px 26px rgba(0,0,0,0.6);
         }
-
+        .nav-button {
+            background: transparent;
+            padding: 8px 18px;
+            border-radius: 10px;
+            color: var(--muted) !important;
+            font-weight:600;
+            border: 1px solid transparent;
+            transition: all .18s ease;
+        }
         .nav-button:hover {
-            background: linear-gradient(90deg, rgba(0,200,120,0.06), rgba(0,200,120,0.02));
-            border-color: rgba(0,200,120,0.35);
-            transform: translateY(-4px);
-            box-shadow: 0 6px 22px rgba(0,200,120,0.12);
+            color: white !important;
+            transform: translateY(-3px);
+            border: 1px solid rgba(255,255,255,0.04);
+            box-shadow: 0 8px 30px rgba(12, 45, 32, 0.08);
             cursor: pointer;
         }
 
+        /* Hero */
         .hero {
-            background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.25));
-            padding: 28px;
-            border-radius: 16px;
-            border: 1px solid rgba(0,200,120,0.06);
-            box-shadow: 0 10px 40px rgba(0,200,120,0.04);
             display:flex;
-            gap:20px;
+            gap:22px;
             align-items:center;
+            padding:22px;
+            border-radius:14px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            border:1px solid var(--glass-border);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            margin-bottom:18px;
         }
-
-        .hero-left {
-            flex: 1;
-            padding: 10px 18px;
-        }
-
-        .hero-right {
-            width: 420px;
-            min-width: 260px;
-            max-width: 460px;
-            text-align:center;
-        }
+        .hero-left { flex:1; padding:8px 12px; }
+        .hero-right { width:420px; min-width:260px; max-width:460px; }
 
         .hero-title {
-            font-size: 2.6rem;
-            line-height:1.05;
-            letter-spacing: 0.6px;
-            margin-bottom: 6px;
-            color: white;
-            text-shadow: 0 6px 30px rgba(0,255,150,0.06), 0 0 18px rgba(0,200,120,0.06);
+            font-size:2.4rem;
+            margin-bottom:6px;
+            color: #f7fff7;
+            letter-spacing:0.2px;
         }
-
         .hero-sub {
-            color: #bfffe2;
-            font-size: 1.05rem;
-            margin-bottom: 18px;
+            color: var(--muted);
+            font-size:1.02rem;
+            margin-bottom:14px;
         }
-
-        .neon-pill {
+        .pill {
             display:inline-block;
-            padding:10px 14px;
-            background: linear-gradient(90deg, rgba(0,255,150,0.06), rgba(0,200,120,0.02));
-            border-radius: 999px;
-            color: var(--neon);
+            padding:8px 12px;
+            border-radius:999px;
+            background: rgba(102,227,159,0.06);
+            color: var(--accent);
             font-weight:700;
-            border: 1px solid rgba(0,200,120,0.12);
-            margin-bottom: 12px;
-            box-shadow: 0 8px 30px rgba(0,200,120,0.04), 0 0 14px rgba(0,200,120,0.02) inset;
+            border: 1px solid rgba(102,227,159,0.08);
+            margin-bottom:10px;
         }
 
-        .feature-grid { display:flex; gap:14px; margin-top:18px; }
+        .feature-grid { display:flex; gap:12px; margin-top:12px; }
         .feature-card {
-            background: var(--card-bg);
-            padding: 14px;
-            border-radius: 12px;
+            background: var(--card);
+            padding:12px;
+            border-radius:10px;
             flex:1;
-            border: 1px solid rgba(0,200,120,0.04);
-            transition: transform 0.18s ease, box-shadow 0.18s ease;
+            border:1px solid rgba(255,255,255,0.02);
         }
-        .feature-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 40px rgba(0,200,120,0.06);
-        }
-        .feature-title { font-weight:700; color: #eafaf1; margin-bottom:6px; }
-        .feature-desc { color:#bfeee0; font-size:0.95rem; }
+        .feature-title { color:#f8fff8; font-weight:700; margin-bottom:6px; }
+        .feature-desc { color: var(--muted); font-size:0.95rem; }
 
-        /* Animated energy wave */
-        .energy-wave {
-            width:100%;
+        /* subtle horizontal accent */
+        .accent-line {
             height:8px;
-            background: linear-gradient(90deg, rgba(0,200,120,0.18), rgba(0,255,150,0.25), rgba(0,200,120,0.18));
-            border-radius: 999px;
-            margin-top: 18px;
-            box-shadow: 0 10px 30px rgba(0,200,120,0.06);
-            animation: pulse 3.5s infinite;
-            opacity:0.95;
-        }
-        @keyframes pulse {
-            0% { transform: translateX(-6px) scaleX(0.98); }
-            50% { transform: translateX(6px) scaleX(1.02); }
-            100% { transform: translateX(-6px) scaleX(0.98); }
+            border-radius:999px;
+            background: linear-gradient(90deg, rgba(102,227,159,0.14), rgba(102,227,159,0.08));
+            margin-top:14px;
+            box-shadow: 0 6px 26px rgba(102,227,159,0.03);
         }
 
-        /* download link style */
-        .download-zip {
+        /* demo panel */
+        .demo-panel {
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+            padding:14px;
+            border-radius:10px;
+            border:1px solid rgba(255,255,255,0.02);
+            text-align:left;
+            color: var(--muted);
+        }
+        .demo-stat { font-weight:700; color:#f6fff6; }
+
+        /* download link */
+        .download-link {
             display:inline-block;
             margin-top:12px;
             padding:10px 14px;
             border-radius:10px;
-            background:linear-gradient(90deg, rgba(0,255,150,0.06), rgba(0,200,120,0.02));
-            color:var(--neon);
+            background: transparent;
+            color: var(--accent);
             text-decoration:none;
-            border:1px solid rgba(0,200,120,0.1);
+            border: 1px solid rgba(102,227,159,0.06);
         }
 
-        /* responsive tweaks */
-        @media (max-width: 900px) {
+        /* responsive */
+        @media (max-width:900px) {
             .hero { flex-direction:column; }
             .hero-right { width:100%; }
             .feature-grid { flex-direction:column; }
         }
-
     </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# NAVIGATION BAR (unchanged functionality)
+# NAVIGATION BAR (functional, unchanged)
 # -----------------------------
 if "page" not in st.session_state:
     st.session_state["page"] = "Home"
 
 st.markdown('<div class="cool-navbar">', unsafe_allow_html=True)
 col1, col2, col3 = st.columns([1,1,1])
-
 if col1.button("🏠 Home"):
     st.session_state["page"] = "Home"
 if col2.button("🌍 Carbon Calculator"):
     st.session_state["page"] = "Carbon"
 if col3.button("⚡ Green Energy AI"):
     st.session_state["page"] = "AI"
-
 st.markdown('</div>', unsafe_allow_html=True)
 
 page = st.session_state["page"]
 
 # -----------------------------
-# HERO / FRONT PAGE: FUTURISTIC GREEN-TECH (STYLE A)
-# Only the Home page UI is upgraded. All functionality below remains unchanged.
+# HOME (Minimal Premium UI B1) — updated only this page
 # -----------------------------
 if page == "Home":
-    st.markdown("""
+    # Use the uploaded file path as the download URL (as provided in conversation)
+    # Developer note: using the local uploaded path from the history
+    project_zip_path = "sandbox:/mnt/data/serpent_bravo-chatbot (1).zip"
+
+    st.markdown(f"""
     <div class="hero">
         <div class="hero-left">
-            <div class="neon-pill">Live • Science Exhibition Ready</div>
-            <div class="hero-title">✨ Live Carbon Footprint Analyzer & Green Energy AI</div>
-            <div class="hero-sub">Interactive, voice-enabled, and educational — built for a science exhibition demo. Instant insights, clear visuals, and guided recommendations.</div>
+            <div class="pill">Exhibition Mode • Ready</div>
+            <div class="hero-title">Carbon Footprint Analyzer & Green Energy AI</div>
+            <div class="hero-sub">A compact, presentation-ready tool for demonstrations — accurate calculations, clear visuals, and AI-backed explanations. Designed for school science exhibitions.</div>
 
             <div class="feature-grid">
                 <div class="feature-card">
-                    <div class="feature-title">🔍 Accurate Calculations</div>
-                    <div class="feature-desc">Transport, electricity, LPG, AC, geyser, waste and diet — all combined into a clear footprint.</div>
+                    <div class="feature-title">Precise Calculator</div>
+                    <div class="feature-desc">Combine transport, electricity, LPG, AC, geyser, waste, and diet into a single footprint figure.</div>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-title">🎙️ Voice Interaction</div>
-                    <div class="feature-desc">Speak your questions to the app during the demo — modern and hands-on.</div>
+                    <div class="feature-title">Interactive AI</div>
+                    <div class="feature-desc">Ask about solar, wind, EVs, and sustainable home tips — powered by Gemini 2.5 Flash.</div>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-title">🤖 AI Knowledge Assistant</div>
-                    <div class="feature-desc">Gemini-powered explanations for green energy topics — great for judges and visitors.</div>
+                    <div class="feature-title">Voice Enabled</div>
+                    <div class="feature-desc">Speak directly to the app during your live demo (browser or local mode as supported).</div>
                 </div>
             </div>
 
-            <div class="energy-wave"></div>
+            <div class="accent-line"></div>
 
-            <div style="margin-top:16px;">
-                <a class="download-zip" href="sandbox:/mnt/data/serpent_bravo-chatbot (1).zip" target="_blank">📦 Download Project Assets</a>
-                <span style="color:#9fffd6; margin-left:12px; font-size:0.95rem;">(Includes README & deployment files)</span>
+            <div style="margin-top:12px;">
+                <a class="download-link" href="{project_zip_path}" target="_blank">📦 Download Project Assets</a>
+                <span style="color:var(--muted); margin-left:10px;">(README, assets & deploy files)</span>
             </div>
         </div>
 
         <div class="hero-right">
-            <!-- stylized demo panel -->
-            <div style="background:linear-gradient(180deg, rgba(0,0,0,0.25), rgba(10,10,10,0.2)); padding:16px; border-radius:12px; border:1px solid rgba(0,200,120,0.06); box-shadow: 0 8px 30px rgba(0,200,120,0.03);">
-                <h3 style="margin-bottom:6px; color: #dfffe9;">Quick Demo</h3>
-                <div style="color:#bfffe0; font-size:0.95rem; margin-bottom:8px;">Try our one-click demo values for exhibition mode:</div>
-                <div style="display:flex; gap:8px; margin-bottom:10px;">
-                    <button onclick="" style="padding:8px 12px; border-radius:8px; background:rgba(0,255,150,0.06); border:1px solid rgba(0,200,120,0.08); color:var(--neon); font-weight:700;">Demo 1</button>
-                    <button onclick="" style="padding:8px 12px; border-radius:8px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.03); color:#bfffe0;">Demo 2</button>
+            <div class="demo-panel">
+                <div style="font-size:0.95rem; color:var(--muted); margin-bottom:10px;">Demo quick stats</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <div style="color:var(--muted)">Monthly Electricity</div><div class="demo-stat">350 kWh</div>
                 </div>
-                <div style="background: rgba(0,0,0,0.35); padding:10px; border-radius:8px; color:#cffff0; font-size:0.95rem;">
-                    <strong>Live Stats</strong>
-                    <div style="margin-top:8px;">
-                        <div>Monthly Electricity: <strong>350 kWh</strong></div>
-                        <div>Daily Travel: <strong>20 km</strong></div>
-                        <div>Estimated Daily CO₂: <strong>9.8 kg</strong></div>
-                    </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <div style="color:var(--muted)">Daily Travel</div><div class="demo-stat">20 km</div>
                 </div>
-                <div style="margin-top:12px; text-align:center;">
-                    <a class="download-zip" href="#Carbon">🚀 Open Calculator</a>
+                <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                    <div style="color:var(--muted)">Estimated CO₂</div><div class="demo-stat">9.8 kg/day</div>
+                </div>
+                <div style="text-align:center; margin-top:8px;">
+                    <a class="download-link" href="#Carbon">Open Calculator →</a>
                 </div>
             </div>
         </div>
