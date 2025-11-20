@@ -129,6 +129,8 @@ def sidebar_button(name, label):
 sidebar_button("Home", "🏠 Home")
 sidebar_button("Carbon", "🌍 Carbon Calculator")
 sidebar_button("AI", "⚡ Green Energy AI Assistant")
+sidebar_button("About", "ℹ About This App")
+
 
 page = st.session_state["page"]
 
@@ -232,3 +234,59 @@ elif page == "AI":
 
             if st.checkbox("🔊 Hear this as Audio"):
                 text_to_audio(response.text)
+
+
+# ================================
+# PAGE: ABOUT THIS APP
+# ================================
+elif page == "About":
+    st.title("ℹ About This App")
+
+    st.markdown("""
+        ### 🎯 **Purpose of This App**
+        This project has been created to help users:
+        - Measure their **daily carbon footprint**
+        - Understand how daily lifestyle choices impact the environment
+        - Learn about **renewable energy, sustainability, and green technology**
+        - Interact with an intelligent **Green Energy AI Assistant**
+        - Visualize environmental impact using **pie charts & badges**
+        - Develop curiosity toward **climate science & eco innovation**
+
+        It aims to create awareness among students about:
+        - Carbon emissions  
+        - Climate change  
+        - Energy conservation  
+        - Practical methods of reducing personal environmental impact  
+        - Green habits that can be adopted in everyday life  
+
+        This app uses:
+        - **Python + Streamlit** for UI  
+        - **Gemini AI** for answering green energy questions  
+        - **Advanced Carbon Emission formulas**  
+        - **Dark premium interface** for modern presentation  
+    """)
+
+    st.markdown("---")
+
+    st.markdown("""
+        ### 👤 **Creator**
+        This innovative science exhibition project is proudly created by:
+
+        ## ⭐ **Arsh Kumar Gupta**  
+        **Class XI–A**
+
+        Kendriya Vidyalaya  
+        Rashtriya Bal Vigyanik Utsav  
+    """)
+
+    st.markdown("---")
+
+    st.markdown("""
+        ### 🌟 **Vision**
+        To inspire a generation of students to:
+        - Think sustainably  
+        - Use technology to solve real-world climate problems  
+        - Build a greener future for India and the world  
+    """)
+
+
