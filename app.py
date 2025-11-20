@@ -14,10 +14,11 @@ st.set_page_config(
 )
 
 # ================================
-# DARK MODE THEME
+# DARK PREMIUM THEME + SMOOTH SIDEBAR
 # ================================
 st.markdown("""
     <style>
+        /* App Background */
         .stApp {
             background-color: #0c0c0c !important;
         }
@@ -28,42 +29,57 @@ st.markdown("""
             color: white !important;
             font-weight: 700 !important;
         }
-        .css-1d391kg, .css-1lcbmhc {
-            background-color: #111 !important;
-        }
-        /* Sidebar */
+
+        /* Sidebar Base */
         section[data-testid="stSidebar"] {
-            background: #0f0f0f !important;
+            background: linear-gradient(180deg, #0f0f0f, #050505);
             border-right: 1px solid #00ff8c33;
+            padding-top: 20px;
+            transition: 0.3s ease;
         }
+
+        /* Sidebar Title */
         .sidebar-title {
-            font-size: 26px;
-            font-weight: 800;
+            font-size: 28px;
+            font-weight: 900;
             color: #00ffae;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+            text-shadow: 0px 0px 12px #00ffaeaa;
         }
-        /* Sidebar Buttons */
+
+        /* Sidebar Buttons (new premium style) */
         .sidebar-btn {
-            padding: 12px;
-            margin-top: 8px;
+            padding: 12px 20px;
+            margin: 10px 8px;
+            border-radius: 10px;
             font-size: 18px;
-            border-radius: 8px;
+            font-weight: 500;
+            color: #e3e3e3;
             text-align: center;
-            background-color: #1a1a1a;
-            color: white;
-            border: 1px solid #00ff8c55;
-            transition: 0.25s;
+            border: 1px solid #00ff8c33;
+            background: rgba(20,20,20,0.7);
+            backdrop-filter: blur(4px);
+            transition: 0.25s ease-in-out;
         }
+
         .sidebar-btn:hover {
-            background-color: #00ff8c55;
+            color: black;
+            background: #00ff8c;
+            border-color: #00ff8c;
+            transform: translateX(6px);
+            box-shadow: 0px 0px 12px #00ff8c77;
             cursor: pointer;
         }
+
+        /* Selected Button */
         .selected-btn {
-            background-color: #00ff8c !important;
+            background: #00ff8c;
             color: black !important;
             border: 1px solid #00ff8c;
             font-weight: 700;
+            box-shadow: 0px 0px 12px #00ff8caa;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -112,7 +128,7 @@ def achievements(score):
 
 
 # ================================
-# SIDEBAR NAVIGATION
+# SIDEBAR NAVIGATION (UPGRADED)
 # ================================
 if "page" not in st.session_state:
     st.session_state["page"] = "Home"
@@ -121,11 +137,14 @@ st.sidebar.markdown("<div class='sidebar-title'>🌱 Green Energy AI</div>", uns
 
 def sidebar_button(name, label):
     selected = "selected-btn" if st.session_state["page"] == name else "sidebar-btn"
+
     if st.sidebar.button(label, key=name):
         st.session_state["page"] = name
+
     st.sidebar.markdown(f"<div class='{selected}'>{label}</div>", unsafe_allow_html=True)
 
 
+# New Smooth Animated Buttons
 sidebar_button("Home", "🏠 Home")
 sidebar_button("Carbon", "🌍 Carbon Calculator")
 sidebar_button("AI", "⚡ Green Energy AI Assistant")
@@ -135,7 +154,7 @@ sidebar_button("About", "ℹ About This App")
 page = st.session_state["page"]
 
 # ================================
-# PAGE: HOME
+# HOME PAGE
 # ================================
 if page == "Home":
     st.title("🌱 Carbon Footprint Analyzer & Green Energy AI")
@@ -151,8 +170,9 @@ if page == "Home":
         - ✔ Hear AI responses using **Text-to-Speech**  
     """)
 
+
 # ================================
-# PAGE: CARBON CALCULATOR
+# CARBON CALCULATOR PAGE
 # ================================
 elif page == "Carbon":
 
@@ -207,7 +227,7 @@ elif page == "Carbon":
         for a in achievements(total):
             st.write("- " + a)
 
-        # PIE CHART VISUAL
+        # PIE CHART
         labels = ["Transport", "Electricity", "LPG", "AC", "Geyser", "Waste", "Food"]
         values = [transport, electricity, lpg_em, ac_em, gey_em, waste_em, food_em]
 
@@ -217,7 +237,7 @@ elif page == "Carbon":
 
 
 # ================================
-# PAGE: AI ASSISTANT
+# AI ASSISTANT PAGE
 # ================================
 elif page == "AI":
     st.title("⚡ Green Energy AI Assistant")
@@ -237,56 +257,44 @@ elif page == "AI":
 
 
 # ================================
-# PAGE: ABOUT THIS APP
+# ABOUT PAGE
 # ================================
 elif page == "About":
     st.title("ℹ About This App")
 
     st.markdown("""
         ### 🎯 **Purpose of This App**
-        This project has been created to help users:
+        This project helps users:
         - Measure their **daily carbon footprint**
-        - Understand how daily lifestyle choices impact the environment
-        - Learn about **renewable energy, sustainability, and green technology**
-        - Interact with an intelligent **Green Energy AI Assistant**
-        - Visualize environmental impact using **pie charts & badges**
-        - Develop curiosity toward **climate science & eco innovation**
+        - Learn how lifestyle affects the planet
+        - Understand **renewable energy, sustainability, & eco habits**
+        - Use an intelligent **Green Energy AI Assistant**
+        - Visualize environmental impact using **charts & badges**
+        - Explore climate science in a fun and interactive way
 
-        It aims to create awareness among students about:
-        - Carbon emissions  
-        - Climate change  
-        - Energy conservation  
-        - Practical methods of reducing personal environmental impact  
-        - Green habits that can be adopted in everyday life  
-
-        This app uses:
-        - **Python + Streamlit** for UI  
-        - **Gemini AI** for answering green energy questions  
-        - **Advanced Carbon Emission formulas**  
-        - **Dark premium interface** for modern presentation  
+        Built using:
+        - **Python + Streamlit**
+        - **Gemini AI**
+        - **Premium Dark UI**
     """)
 
     st.markdown("---")
 
     st.markdown("""
         ### 👤 **Creator**
-        This innovative science exhibition project is proudly created by:
-
-        ## ⭐ **Arsh Kumar Gupta**  
+        ## ⭐ Arsh Kumar Gupta  
         **Class XI–A**
 
         Kendriya Vidyalaya  
-        Rashtriya Bal Vigyanik Utsav  
+        Rashtriya Bal Vigyanik Utsav
     """)
 
     st.markdown("---")
 
     st.markdown("""
-        ### 🌟 **Vision**
-        To inspire a generation of students to:
+        ### 🌟 Vision
+        To inspire students to:
         - Think sustainably  
-        - Use technology to solve real-world climate problems  
-        - Build a greener future for India and the world  
+        - Build real solutions for climate change  
+        - Create a greener future for India and the world  
     """)
-
-
