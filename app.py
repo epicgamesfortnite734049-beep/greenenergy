@@ -228,27 +228,28 @@ def achievements(score):
         ach.append("⚠ High Emission Alert Badge")
     return ach
 
-
 # ================================
-# SIDEBAR NAVIGATION (UPGRADED)
+# SIDEBAR NAVIGATION (NO HEADING)
 # ================================
 if "page" not in st.session_state:
     st.session_state["page"] = "Home"
 
-st.sidebar.markdown("<div class='sidebar-title'>🌱 Green Energy AI</div>", unsafe_allow_html=True)
+with st.sidebar:
 
-def sidebar_button(name, label):
-    selected = "selected-btn" if st.session_state["page"] == name else "sidebar-btn"
-    if st.sidebar.button(label, key=name):
-        st.session_state["page"] = name
-    st.sidebar.markdown(f"<div class='{selected}' style='margin-bottom:6px'>{label}</div>", unsafe_allow_html=True)
+    # Sidebar Buttons Only (No Heading)
+    def sidebar_button(name, label):
+        selected_class = "selected-btn" if st.session_state["page"] == name else "sidebar-btn"
+        if st.button(label, key=name):
+            st.session_state["page"] = name
+        st.markdown(f"<div class='{selected_class}'>{label}</div>", unsafe_allow_html=True)
 
-# buttons (including Timeline)
-sidebar_button("Home", "🏠 Home")
-sidebar_button("Carbon", "🌍 Carbon Calculator")
-sidebar_button("AI", "⚡ Green Energy AI Assistant")
-sidebar_button("Timeline", "📅 Timeline")
-sidebar_button("About", "ℹ About This App")
+    sidebar_button("Home", "🏠 Home")
+    sidebar_button("Carbon", "🌍 Carbon Calculator")
+    sidebar_button("AI", "⚡ Green Energy AI Assistant")
+    sidebar_button("About", "ℹ About This App")
+
+
+
 
 page = st.session_state["page"]
 
@@ -465,5 +466,6 @@ with st.sidebar:
     sidebar_button("Carbon", "🌍 Carbon Calculator")
     sidebar_button("AI", "⚡ Green Energy AI Assistant")
     sidebar_button("About", "ℹ About This App")
+
 
 
