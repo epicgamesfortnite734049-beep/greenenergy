@@ -429,7 +429,7 @@ elif page == "About":
         **Class XI–A**
 
         Kendriya Vidyalaya  
-        Rashtriya Bal Vigyanik Utsav
+        Rashtriya Bal Vigyanik Pradarshani
     """)
 
     st.markdown("---")
@@ -441,3 +441,4 @@ elif page == "About":
         - Build real solutions for climate change  
         - Create a greener future for India and the world  
     """)
+
