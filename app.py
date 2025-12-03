@@ -3,9 +3,6 @@ import google.generativeai as genai
 import matplotlib.pyplot as plt
 from gtts import gTTS
 from io import BytesIO
-from datetime import datetime
-import pandas as pd
-import numpy as np
 
 # ================================
 # PAGE CONFIG
@@ -17,309 +14,430 @@ st.set_page_config(
 )
 
 # ================================
-# PREMIUM GLASSMORPHISM + PARTICLE SYSTEM + ADVANCED ANIMATIONS
+# DARK PREMIUM THEME + SMOOTH SIDEBAR + TIMELINE ANIMATIONS
 # ================================
 st.markdown("""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        
-        * { font-family: 'Inter', sans-serif; }
-        
-        :root {
-            --primary-glow: #00ff88;
-            --primary-glow-soft: #00ff88aa;
-            --secondary-glow: #00d4ff;
-            --glass-bg: rgba(255,255,255,0.05);
-            --glass-border: rgba(255,255,255,0.1);
-            --dark-bg: #0a0a0f;
-            --card-bg: rgba(20,20,30,0.6);
-        }
-
+        /* App Background */
         .stApp {
-            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
-            overflow-x: hidden;
+            background-color: #0c0c0c !important;
+        }
+        body, p, label, span, div {
+            color: white !important;
+        }
+        h1, h2, h3, h4 {
+            color: white !important;
+            font-weight: 700 !important;
         }
 
-        .particles {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 0;
-        }
-
+        /* Sidebar Base */
         section[data-testid="stSidebar"] {
-            background: rgba(10,10,15,0.95); backdrop-filter: blur(30px);
-            border-right: 1px solid var(--glass-border);
-            border-radius: 0 24px 24px 0;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            background: linear-gradient(180deg, #0f0f0f, #050505);
+            border-right: 1px solid #00ff8c33;
+            padding-top: 18px;
+            transition: 0.3s ease;
         }
 
+        /* Sidebar Title */
         .sidebar-title {
-            font-size: 32px; font-weight: 900;
-            background: linear-gradient(135deg, var(--primary-glow), var(--secondary-glow));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text; text-align: center; margin: 2rem 0;
-            letter-spacing: -0.5px; position: relative;
+            font-size: 28px;
+            font-weight: 900;
+            color: #00ffae;
+            text-align: center;
+            margin-bottom: 22px;
+            letter-spacing: 1px;
+            text-shadow: 0px 0px 12px #00ffaeaa;
         }
-        .sidebar-title::after {
-            content: ''; position: absolute; bottom: -8px; left: 50%;
-            transform: translateX(-50%); width: 60px; height: 3px;
-            background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
+
+        /* Sidebar Buttons (premium) */
+        .sidebar-btn {
+            padding: 12px 18px;
+            margin: 8px 10px;
+            border-radius: 10px;
+            font-size: 17px;
+            font-weight: 600;
+            color: #e8e8e8;
+            text-align: center;
+            border: 1px solid #00ff8c33;
+            background: rgba(20,20,20,0.7);
+            backdrop-filter: blur(4px);
+            transition: all 0.22s ease-in-out;
+        }
+
+        .sidebar-btn:hover {
+            color: black;
+            background: #00ff8c;
+            border-color: #00ff8c;
+            transform: translateX(6px);
+            box-shadow: 0px 0px 12px #00ff8c77;
+            cursor: pointer;
+        }
+
+        /* Selected Button */
+        .selected-btn {
+            background: #00ff8c;
+            color: black !important;
+            border: 1px solid #00ff8c;
+            font-weight: 800;
+            box-shadow: 0px 0px 14px #00ff8caa;
+        }
+
+        /* Timeline container */
+        .timeline-wrap {
+            padding: 22px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.007));
+            border: 1px solid rgba(0,255,140,0.02);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            margin-top: 10px;
+        }
+
+        .timeline {
+            position: relative;
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+
+        /* Vertical line */
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(0,255,140,0.12), rgba(0,200,120,0.08));
             border-radius: 2px;
+            box-shadow: 0 8px 30px rgba(0,255,140,0.03);
         }
 
-        .nav-btn {
-            width: 100%; padding: 16px 20px; margin: 8px 0; border-radius: 16px;
-            font-size: 16px; font-weight: 600; border: 1px solid var(--glass-border);
-            background: var(--glass-bg); backdrop-filter: blur(20px);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
-            overflow: hidden;
-        }
-        .nav-btn:hover { 
-            border-color: var(--primary-glow); background: rgba(0,255,136,0.15);
-            transform: translateX(8px) scale(1.02); box-shadow: 0 20px 40px rgba(0,255,136,0.3);
+        .timemarker {
+            position: relative;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(18px);
+            animation: fadeUp 0.55s ease forwards;
         }
 
-        .premium-card {
-            background: var(--glass-bg); backdrop-filter: blur(25px);
-            border: 1px solid var(--glass-border); border-radius: 24px;
-            padding: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
-            position: relative; overflow: hidden; transition: all 0.4s ease;
-        }
-        .premium-card:hover {
-            transform: translateY(-8px); box-shadow: 0 35px 70px -15px rgba(0,0,0,0.5);
+        .timemarker:nth-child(1) { animation-delay: 0.05s; }
+        .timemarker:nth-child(2) { animation-delay: 0.12s; }
+        .timemarker:nth-child(3) { animation-delay: 0.20s; }
+        .timemarker:nth-child(4) { animation-delay: 0.28s; }
+        .timemarker:nth-child(5) { animation-delay: 0.36s; }
+        .timemarker:nth-child(6) { animation-delay: 0.44s; }
+        .timemarker:nth-child(7) { animation-delay: 0.52s; }
+        .timemarker:nth-child(8) { animation-delay: 0.60s; }
+        .timemarker:nth-child(9) { animation-delay: 0.68s; }
+        .timemarker:nth-child(10){ animation-delay: 0.76s; }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0px);
+            }
         }
 
-        .glow-header {
-            font-size: 3rem; font-weight: 900;
-            background: linear-gradient(135deg, #ffffff, var(--primary-glow));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text; margin-bottom: 1.5rem; position: relative;
-        }
-        .glow-header::after {
-            content: ''; position: absolute; bottom: -10px; left: 0;
-            width: 80px; height: 4px; background: linear-gradient(90deg, var(--primary-glow), var(--secondary-glow));
-            border-radius: 2px;
-        }
-
-        .metric-card {
-            background: linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,212,255,0.1));
-            backdrop-filter: blur(20px); border: 1px solid rgba(0,255,136,0.3);
-            border-radius: 20px; padding: 2rem; text-align: center;
-        }
-        .metric-value {
-            font-size: 2.5rem; font-weight: 900;
-            background: linear-gradient(135deg, var(--primary-glow), var(--secondary-glow));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        .time-dot {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #aaffcc, #00ff8c);
+            border: 3px solid #07120a;
+            box-shadow: 0 6px 22px rgba(0,255,140,0.12);
         }
 
-        .stButton > button {
-            background: linear-gradient(135deg, var(--primary-glow), rgba(0,255,136,0.8));
-            border: none; color: #000; font-weight: 700; border-radius: 16px;
-            padding: 12px 32px; box-shadow: 0 10px 30px rgba(0,255,136,0.4);
+        .time-card {
+            margin-left: 36px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(0,255,140,0.03);
         }
 
-        @keyframes float {
-            0% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
-            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
-            100% { transform: translateY(0px) rotate(360deg); opacity: 0.7; }
+        .time-title {
+            color: #e8ffe8;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .time-desc {
+            color: #bfeee0;
+            margin: 0;
+            font-size: 0.98rem;
+        }
+
+        .timeline-footer {
+            margin-top: 18px;
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.35);
+            color: #cfeee0;
+            border: 1px solid rgba(0,255,140,0.03);
+        }
+
+        /* responsive */
+        @media (max-width: 900px) {
+            .timeline { padding-left: 10px; }
+            .time-card { margin-left: 28px; }
         }
     </style>
-    
-    <div class="particles">
-        <div style="position: absolute; width: 4px; height: 4px; background: var(--primary-glow); border-radius: 50%; animation: float 20s infinite linear; top: 20%; left: 10%;"></div>
-        <div style="position: absolute; width: 3px; height: 3px; background: var(--secondary-glow); border-radius: 50%; animation: float 25s infinite linear reverse; top: 60%; right: 15%;"></div>
-        <div style="position: absolute; width: 2px; height: 2px; background: var(--primary-glow); border-radius: 50%; animation: float 18s infinite linear; bottom: 30%; left: 70%;"></div>
-    </div>
 """, unsafe_allow_html=True)
 
 # ================================
-# SESSION STATE & CONFIG
+# GEMINI API CONFIG
 # ================================
-if "page" not in st.session_state: st.session_state["page"] = "Home"
-if "history" not in st.session_state: st.session_state["history"] = []
-if "user_name" not in st.session_state: st.session_state["user_name"] = ""
-if "quiz_score" not in st.session_state: st.session_state["quiz_score"] = 0
-if "pledge" not in st.session_state: st.session_state["pledge"] = ""
-
 GEMINI_KEY = st.secrets.get("GEMINI_API_KEY", None)
-if GEMINI_KEY: genai.configure(api_key=GEMINI_KEY)
+if GEMINI_KEY:
+    genai.configure(api_key=GEMINI_KEY)
 
 # ================================
-# UTILITY FUNCTIONS
+# TEXT → SPEECH
 # ================================
 def text_to_audio(text):
-    tts = gTTS(text); buffer = BytesIO()
-    tts.write_to_fp(buffer); st.audio(buffer.getvalue(), format="audio/mp3")
+    tts = gTTS(text)
+    buffer = BytesIO()
+    tts.write_to_fp(buffer)
+    audio_data = buffer.getvalue()
+    st.audio(audio_data, format="audio/mp3")
 
+
+# ================================
+# BADGE SYSTEM
+# ================================
 def carbon_badge(score):
-    if score < 8: return "🟢 *Eco Champion*"
-    elif score < 15: return "🟡 *Green Progress*"
-    return "🔴 *Action Needed*"
+    if score < 8:
+        return "🟢 Low Carbon Footprint – Eco Friendly!"
+    elif score < 15:
+        return "🟡 Moderate Footprint – Can Improve."
+    else:
+        return "🔴 High Footprint – Needs Immediate Action."
+
 
 def achievements(score):
     ach = []
-    if score < 6: ach.append("🌟 Eco-Starter")
-    if score < 10: ach.append("💚 Green Badge") 
-    if score < 14: ach.append("🔥 Reducer")
-    else: ach.append("⚠️ Alert")
+    if score < 6:
+        ach.append("🌟 Eco-Starter Award")
+    if score < 10:
+        ach.append("💚 Green Lifestyle Badge")
+    if score < 14:
+        ach.append("🔥 Carbon Reducer Badge")
+    if score >= 14:
+        ach.append("⚠ High Emission Alert Badge")
     return ach
 
+
 # ================================
-# PREMIUM SIDEBAR
+# SIDEBAR NAVIGATION (UPGRADED)
 # ================================
-with st.sidebar:
-    st.markdown('<div class="sidebar-title">🌱 Green Energy AI</div>', unsafe_allow_html=True)
-    
-    nav_items = [
-        ("🏠 Home", "Home"), ("🌍 Carbon Calculator", "Carbon"), 
-        ("📈 History", "History"), ("⚡ AI Assistant", "AI"),
-        ("🧠 Quiz", "Quiz"), ("📅 Timeline", "Timeline"), ("ℹ About", "About")
-    ]
-    
-    for label, page_name in nav_items:
-        if st.button(label, key=f"nav_{page_name}", use_container_width=True):
-            st.session_state["page"] = page_name
-    
-    st.markdown("---")
-    st.session_state["user_name"] = st.text_input("👤 Name", value=st.session_state["user_name"])
+if "page" not in st.session_state:
+    st.session_state["page"] = "Home"
+
+st.sidebar.markdown("<div class='sidebar-title'>🌱 Green Energy AI</div>", unsafe_allow_html=True)
+
+def sidebar_button(name, label):
+    selected = "selected-btn" if st.session_state["page"] == name else "sidebar-btn"
+    if st.sidebar.button(label, key=name):
+        st.session_state["page"] = name
+    st.sidebar.markdown(f"<div class='{selected}' style='margin-bottom:6px'>{label}</div>", unsafe_allow_html=True)
+
+# buttons (including Timeline)
+sidebar_button("Home", "🏠 Home")
+sidebar_button("Carbon", "🌍 Carbon Calculator")
+sidebar_button("AI", "⚡ Green Energy AI Assistant")
+sidebar_button("Timeline", "📅 Timeline")
+sidebar_button("About", "ℹ About This App")
 
 page = st.session_state["page"]
 
 # ================================
-# FULLY FUNCTIONAL PAGES
+# HOME PAGE
 # ================================
 if page == "Home":
-    st.markdown('<div class="glow-header">🌱 Carbon Footprint Analyzer</div>', unsafe_allow_html=True)
-    col1, col2 = st.columns([2,1])
-    with col1:
-        with st.container():
-            st.markdown("""
-                <div class="premium-card">
-                    <h3 style="color: #00ff88;">✨ Premium Features</h3>
-                    <ul style="line-height: 2;">
-                        <li>📊 Real-time tracking</li>
-                        <li>🎯 Personalized tips</li>
-                        <li>🤖 AI Assistant</li>
-                        <li>📈 Progress charts</li>
-                        <li>🏆 Badges & Quiz</li>
-                    </ul>
-                </div>
-            """, unsafe_allow_html=True)
-    with col2:
-        if st.session_state["history"]:
-            latest = st.session_state["history"][-1]
-            st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-value">{latest['total']:.1f}kg</div>
-                    <div style="color: #aaa;">CO₂ Today</div>
-                </div>
-            """, unsafe_allow_html=True)
+    st.title("🌱 Carbon Footprint Analyzer & Green Energy AI")
+    st.subheader("Your Premium Science Exhibition Project")
 
+    st.write("""
+        Welcome!  
+        This application allows you to:
+        - ✔ Calculate your *Carbon Footprint*  
+        - ✔ Generate a *Pie Chart Breakdown*  
+        - ✔ Earn *Eco Achievements & Carbon Badges*  
+        - ✔ Ask questions to an advanced *Green Energy AI*  
+        - ✔ Hear AI responses using *Text-to-Speech*  
+    """)
+
+
+# ================================
+# CARBON CALCULATOR PAGE
+# ================================
 elif page == "Carbon":
-    st.markdown('<div class="glow-header">🌍 Carbon Calculator</div>', unsafe_allow_html=True)
-    
-    with st.form("carbon_form"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.header("🚗 Transport")
-            km = st.slider("Daily km", 0, 100, 15)
-            fuel = st.selectbox("Fuel", ["Petrol", "Diesel", "Electric"])
-        with col2:
-            st.header("💡 Electricity")
-            units = st.slider("Monthly units", 0, 1000, 150)
-            diet = st.selectbox("Diet", ["Veg", "Non-Veg"])
-        submitted = st.form_submit_button("🚀 Calculate", use_container_width=True)
-    
-    if 'submitted' in locals() and submitted:
-        total = km * 0.12 + units * 0.8/30 + (6 if diet == "Non-Veg" else 3)
-        st.markdown(f"""
-            <div class="premium-card" style="text-align: center;">
-                <div style="font-size: 4rem; font-weight: 900; color: #00ff88;">{total:.1f}kg</div>
-                <div style="color: #aaa; font-size: 1.2rem;">CO₂ per day</div>
-                <div style="background: rgba(0,255,136,0.2); padding: 1rem; border-radius: 12px; font-weight: 700;">{carbon_badge(total)}</div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        st.session_state["history"].append({"time": datetime.now(), "total": total})
-        
-        fig, ax = plt.subplots(figsize=(8,6))
-        ax.pie([30,25,20,15,10], labels=["Transport","Electricity","Food","Waste","Other"], 
-               autopct='%1.1f%%', colors=['#00ff88','#00d4ff','#ffaa00','#ff6b6b','#aaa'])
+
+    st.title("🌍 Full Carbon Footprint Calculator")
+
+    # TRANSPORT
+    st.header("🚗 Transportation")
+    km = st.slider("Daily Travel (km)", 0, 200, 12)
+    fuel = st.selectbox("Fuel Type", ["Petrol", "Diesel", "Electric"])
+    emission_map = {"Petrol":0.118, "Diesel":0.134, "Electric":0.02}
+    transport = km * emission_map[fuel]
+
+    # ELECTRICITY
+    st.header("💡 Electricity")
+    units = st.number_input("Electricity Units per Month", 0, 2000, 120)
+    electricity = units * 0.82 / 30
+
+    # LPG
+    st.header("🔥 LPG")
+    lpg = st.slider("Cylinders per Year", 0, 24, 6)
+    lpg_em = (lpg * 42.5) / 365
+
+    # AC
+    st.header("❄ Air Conditioner")
+    ac_hr = st.slider("AC Hours Per Day", 0, 24, 3)
+    ac_em = ac_hr * 1.5 * 0.82
+
+    # GEYSER
+    st.header("🚿 Geyser")
+    gey = st.slider("Daily Geyser Use (hours)", 0.0, 5.0, 0.7)
+    gey_em = gey * 2 * 0.82
+
+    # WASTE
+    st.header("🗑 Waste")
+    waste = st.slider("Daily Waste (kg)", 0.0, 5.0, 0.4)
+    waste_em = waste * 0.09
+
+    # FOOD
+    st.header("🍽 Diet Type")
+    diet = st.selectbox("Choose Diet", ["Vegetarian", "Eggs", "Chicken", "Fish", "Mixed Non-Veg"])
+    food_map = {"Vegetarian":2, "Eggs":3, "Chicken":4.5, "Fish":5.5, "Mixed Non-Veg":6.5}
+    food_em = food_map[diet]
+
+    total = transport + electricity + lpg_em + ac_em + gey_em + waste_em + food_em
+
+    if st.button("Calculate My Carbon Footprint"):
+        st.success(f"### 🌎 Total Daily Emission: *{total:.2f} kg CO₂/day*")
+
+        st.info(carbon_badge(total))
+
+        st.subheader("🏆 Achievements Earned")
+        for a in achievements(total):
+            st.write("- " + a)
+
+        # PIE CHART
+        labels = ["Transport", "Electricity", "LPG", "AC", "Geyser", "Waste", "Food"]
+        values = [transport, electricity, lpg_em, ac_em, gey_em, waste_em, food_em]
+
+        fig, ax = plt.subplots()
+        ax.pie(values, labels=labels, autopct="%1.1f%%")
         st.pyplot(fig)
 
-elif page == "History":
-    st.markdown('<div class="glow-header">📈 Your Progress</div>', unsafe_allow_html=True)
-    with st.container():
-        st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        if st.session_state["history"]:
-            df = pd.DataFrame(st.session_state["history"])
-            st.line_chart(df.set_index('time')['total'])
-            st.dataframe(df.tail(5))
-        else:
-            st.info("👆 Calculate your first footprint!")
-        st.markdown('</div>', unsafe_allow_html=True)
 
+# ================================
+# AI ASSISTANT PAGE
+# ================================
 elif page == "AI":
-    st.markdown('<div class="glow-header">⚡ AI Assistant</div>', unsafe_allow_html=True)
-    with st.container():
-        st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        if not GEMINI_KEY:
-            st.error("🔑 Add GEMINI_API_KEY in Streamlit Secrets")
-        else:
-            user_input = st.text_area("Ask about green energy...")
-            if st.button("Ask AI", use_container_width=True):
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                context = f"User carbon footprint: {st.session_state['history'][-1]['total']:.1f}kg/day" if st.session_state["history"] else ""
-                response = model.generate_content(context + "\n\n" + user_input)
-                st.success(response.text)
-                if st.button("🔊 Audio"): text_to_audio(response.text)
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.title("⚡ Green Energy AI Assistant")
 
-elif page == "Quiz":
-    st.markdown('<div class="glow-header">🧠 Green Quiz</div>', unsafe_allow_html=True)
-    with st.container():
-        st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        questions = [
-            {"q": "Main global warming gas?", "options": ["O₂", "N₂", "CO₂", "He"], "ans": "CO₂"},
-            {"q": "Renewable energy?", "options": ["Coal", "Solar", "Petrol", "Diesel"], "ans": "Solar"}
-        ]
-        
-        score = 0
-        for i, q in enumerate(questions):
-            st.write(f"**Q{i+1}.** {q['q']}")
-            ans = st.radio("", q['options'], key=f"q{i}")
-            if ans == q['ans']: score += 1
-        
-        if st.button("Check Score"):
-            st.session_state["quiz_score"] = score
-            st.success(f"🎉 {score}/{len(questions)} - {'🏆 Champion!' if score == 2 else '💚 Good!'}")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+    if not GEMINI_KEY:
+        st.error("Gemini API Key Missing!")
+    else:
+        user_input = st.text_area("Ask a Green Energy Question")
 
+        if st.button("Ask AI"):
+            model = genai.GenerativeModel("gemini-2.5-flash")
+            response = model.generate_content(user_input)
+            st.write(response.text)
+
+            if st.checkbox("🔊 Hear this as Audio"):
+                text_to_audio(response.text)
+
+
+# ================================
+# TIMELINE PAGE (NEW)
+# ================================
 elif page == "Timeline":
-    st.markdown('<div class="glow-header">📅 Development Timeline</div>', unsafe_allow_html=True)
-    st.markdown("""
-        <div class="premium-card">
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                <div style="display: flex; align-items: center; padding: 1rem; background: rgba(0,255,136,0.1); border-radius: 12px;">
-                    <div style="width: 12px; height: 12px; background: #00ff88; border-radius: 50%; margin-right: 1rem;"></div>
-                    <span><strong>Day 1:</strong> Concept & Planning</span>
-                </div>
-                <div style="display: flex; align-items: center; padding: 1rem; background: rgba(0,212,255,0.1); border-radius: 12px;">
-                    <div style="width: 12px; height: 12px; background: #00d4ff; border-radius: 50%; margin-right: 1rem;"></div>
-                    <span><strong>Day 10:</strong> Premium Glassmorphism UI</span>
+    st.title("📅 Timeline of Building This App")
+
+    st.markdown('<div class="timeline-wrap">', unsafe_allow_html=True)
+    st.markdown('<div class="timeline">', unsafe_allow_html=True)
+
+    timeline_items = [
+        ("Day 1", "Concept idea & planning"),
+        ("Day 2", "Created base UI structure"),
+        ("Day 3", "Added carbon calculator formulas"),
+        ("Day 4", "Added pie chart visualization"),
+        ("Day 5", "Added badge & achievement system"),
+        ("Day 6", "Integrated Gemini AI"),
+        ("Day 7", "Added Dark Premium Theme"),
+        ("Day 8", "Created Sidebar Navigation"),
+        ("Day 9", "Added About section"),
+        ("Day 10", "Final polishing for exhibition"),
+    ]
+
+    for title, desc in timeline_items:
+        st.markdown(f"""
+            <div class="timemarker">
+                <div class="time-dot"></div>
+                <div class="time-card">
+                    <div class="time-title">{title}</div>
+                    <div class="time-desc">{desc}</div>
                 </div>
             </div>
+        """, unsafe_allow_html=True)
+
+    # footer statement (as requested)
+    st.markdown("""
+        <div class="timeline-footer">
+            <strong>Note:</strong> This is only the base version of the timeline. Further updates will be added from time to time in a polished way.
         </div>
     """, unsafe_allow_html=True)
 
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ================================
+# ABOUT PAGE
+# ================================
 elif page == "About":
-    st.markdown('<div class="glow-header">ℹ About</div>', unsafe_allow_html=True)
+    st.title("ℹ About This App")
+
     st.markdown("""
-        <div class="premium-card">
-            <h3>👤 Arsh Kumar Gupta</h3>
-            <p><strong>Class XI-A</strong><br>Kendriya Vidyalaya<br>Rashtriya Bal Vigyanik Pradarshani</p>
-            <div style="background: linear-gradient(135deg, #00ff88, #00d4ff); padding: 1rem; border-radius: 12px; text-align: center; color: black; font-weight: 700;">
-                🌍 Building a Greener Future
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+        ### 🎯 *Purpose of This App*
+        This project helps users:
+        - Measure their *daily carbon footprint*
+        - Learn how lifestyle affects the planet
+        - Understand *renewable energy, sustainability, & eco habits*
+        - Use an intelligent *Green Energy AI Assistant*
+        - Visualize environmental impact using *charts & badges*
+        - Explore climate science in a fun and interactive way
+
+        Built using:
+        - *Python + Streamlit*
+        - *Gemini AI*
+        - *Premium Dark UI*
+    """)
+
+    st.markdown("---")
+
+    st.markdown("""
+        ### 👤 *Creator*
+        ## ⭐ Arsh Kumar Gupta  
+        *Class XI–A*
+
+        Kendriya Vidyalaya  
+        Rashtriya Bal Vigyanik Utsav
+    """)
+
+    st.markdown("---")
+
+    st.markdown("""
+        ### 🌟 Vision
+        To inspire students to:
+        - Think sustainably  
+        - Build real solutions for climate change  
+        - Create a greener future for India and the world  
+    """)
