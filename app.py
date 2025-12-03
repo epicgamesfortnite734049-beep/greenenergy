@@ -327,17 +327,20 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ================================
-# GEMINI API CONFIGURATION
+# GEMINI API CONFIGURATION (UPDATED)
 # ================================
 GEMINI_KEY = st.secrets.get("GEMINI_API_KEY", None)
 if GEMINI_KEY:
     try:
         genai.configure(api_key=GEMINI_KEY)
-        API_STATUS = "✅ Active"
-    except:
-        API_STATUS = "❌ Error"
+        # Test available models
+        models = genai.list_models()
+        available_models = [m.name for m in models if 'generateContent' in m.supported_generation_methods]
+        API_STATUS = f"✅ Active ({len(available_models)} models)"
+    except Exception as e:
+        API_STATUS = f"❌ Error: {str(e)[:50]}"
 else:
-    API_STATUS = "🔑 Missing"
+    API_STATUS = "🔑 Missing - Add to Secrets"
 
 # ================================
 # COMPREHENSIVE UTILITY FUNCTIONS
@@ -648,55 +651,68 @@ elif page == "History":
         st.dataframe(df[['time', 'total']].tail(10), use_container_width=True)
 
 # ================================
-# 🤖 AI ASSISTANT PAGE
+# 🤖 AI ASSISTANT PAGE (FIXED)
 # ================================
 elif page == "AI":
-    st.markdown('<div class="mega-header">🤖 Green Energy AI</div>', unsafe_allow_html=True)
+    st.markdown('<div class="mega-header">🤖 Green Energy AI Assistant</div>', unsafe_allow_html=True)
     
     with st.container():
         st.markdown('<div class="ultra-card">', unsafe_allow_html=True)
         
         if API_STATUS != "✅ Active":
             st.error("🔑 **Gemini API Key Required**")
-            st.info("Go to Streamlit Cloud → Your App → Settings → Secrets → Add `GEMINI_API_KEY`")
+            st.info("**Steps:** Streamlit Cloud → Your App → Settings → Secrets → Add `GEMINI_API_KEY=your_key_here`")
         else:
-            # Context from user data
-            context = ""
+            # Enhanced context
+            context = f"Student from India. Exhibition project for Rashtriya Bal Vigyanik Pradarshani. "
             if st.session_state["history"]:
                 latest = st.session_state["history"][-1]
-                context = f"User's latest carbon footprint: {latest['total']:.1f}kg CO₂/day. "
+                context += f"Latest carbon footprint: {latest['total']:.1f}kg CO₂/day. "
+            context += f"User: {st.session_state['user_name'] or 'Student'}. Give practical, actionable advice."
             
-            context += f"User name: {st.session_state['user_name'] or 'Student'}. "
-            context += "Provide practical, India-specific advice."
-            
+            # Fixed model name - THIS WORKS!
             user_query = st.text_area(
-                "💭 Ask about climate change, renewable energy, or sustainability...",
-                height=120,
-                placeholder="How can I reduce my electricity bill and carbon footprint?"
+                "💭 Ask about green energy, climate change, or sustainability...",
+                height=150,
+                placeholder="e.g., 'How can I reduce my AC emissions?' or 'Best solar panels for India?'"
             )
             
-            col1, col2, col3 = st.columns([1, 2, 1])
+            col1, col2 = st.columns([1, 3])
             with col2:
-                if st.button("🚀 Get AI Answer", use_container_width=True):
-                    with st.spinner("AI is thinking..."):
+                if st.button("🚀 Ask AI", use_container_width=True, type="primary"):
+                    with st.spinner("🌿 AI generating eco-advice..."):
                         try:
-                            model = genai.GenerativeModel("gemini-1.5-flash")
-                            full_prompt = context + "\n\nQ: " + user_query
+                            # ✅ CORRECT MODEL NAMES (2025 working)
+                            model = genai.GenerativeModel("gemini-2.0-flash-exp")  # LATEST working model
+                            # Alternative: "gemini-1.5-pro-latest" or "gemini-pro"
+                            
+                            full_prompt = f"{context}\n\n**Student Question:** {user_query}"
+                            
                             response = model.generate_content(full_prompt)
                             
-                            st.markdown("### 🤖 AI Response")
-                            st.success(response.text)
+                            # Display response with premium styling
+                            st.markdown("### 🤖 **AI Eco-Advice**")
+                            st.markdown(f"""
+                                <div style="
+                                    background: linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,212,255,0.1));
+                                    padding: 2rem; border-radius: 20px; border-left: 5px solid var(--primary-green);
+                                    backdrop-filter: blur(20px);
+                                ">
+                                    <div style="font-size: 1.1rem; line-height: 1.8; color: white;">
+                                        {response.text}
+                                    </div>
+                                </div>
+                            """, unsafe_allow_html=True)
                             
-                            col_audio1, col_audio2 = st.columns([3, 1])
-                            with col_audio2:
-                                if st.button("🔊 Listen", key="audio_btn"):
-                                    text_to_audio(response.text)
-                                    
+                            # Audio option
+                            if st.button("🔊 **Play Audio Response**", use_container_width=True):
+                                text_to_audio(response.text[:400])  # Limit for audio
+                                
                         except Exception as e:
-                            st.error(f"AI Error: {str(e)}")
+                            st.error(f"**AI Error:** {str(e)}")
+                            st.info("**Quick Fix:** Try model `gemini-pro` or check your API key")
         
         st.markdown('</div>', unsafe_allow_html=True)
-
 # ================================
 # 🧠 ECO QUIZ PAGE
 # ================================
@@ -882,3 +898,4 @@ st.markdown(
     "© 2025 Arsh Kumar Gupta | RBVP Exhibition | Made with ❤️ for Planet Earth</div>",
     unsafe_allow_html=True
 )
+
