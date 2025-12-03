@@ -3,6 +3,7 @@ import google.generativeai as genai
 import matplotlib.pyplot as plt
 from gtts import gTTS
 from io import BytesIO
+from datetime import datetime
 
 # ================================
 # PAGE CONFIG
@@ -209,11 +210,11 @@ def text_to_audio(text):
 # ================================
 def carbon_badge(score):
     if score < 8:
-        return "🟢 *Low Carbon Footprint – Eco Friendly!*"
+        return "🟢 Low Carbon Footprint – Eco Friendly!"
     elif score < 15:
-        return "🟡 *Moderate Footprint – Can Improve.*"
+        return "🟡 Moderate Footprint – Can Improve."
     else:
-        return "🔴 *High Footprint – Needs Immediate Action.*"
+        return "🔴 High Footprint – Needs Immediate Action."
 
 
 def achievements(score):
@@ -229,12 +230,88 @@ def achievements(score):
     return ach
 
 
+def personalized_tips(transport, electricity, lpg_em, ac_em, gey_em, waste_em, food_em):
+    tips = []
+    max_source = max(
+        [
+            ("Transportation", transport),
+            ("Electricity", electricity),
+            ("LPG", lpg_em),
+            ("AC", ac_em),
+            ("Geyser", gey_em),
+            ("Waste", waste_em),
+            ("Food", food_em),
+        ],
+        key=lambda x: x[1],
+    )[0]
+
+    if max_source == "Transportation":
+        tips.append("Try carpooling, public transport, or cycling for short distances.")
+    if max_source == "Electricity":
+        tips.append("Switch off lights and fans when not in use and prefer LED bulbs and 5-star appliances.")
+    if max_source == "LPG":
+        tips.append("Use lids while cooking and plan meals to reduce LPG use.")
+    if max_source == "AC":
+        tips.append("Keep AC at 24–26°C, clean filters regularly, and use natural ventilation when possible.")
+    if max_source == "Geyser":
+        tips.append("Use bucket instead of shower and switch off geyser after water is hot.")
+    if max_source == "Waste":
+        tips.append("Segregate waste, recycle paper/plastic, and reduce single-use items.")
+    if max_source == "Food":
+        tips.append("Increase plant-based meals and reduce red meat and packaged foods.")
+
+    tips.append("Plant trees or support green projects to balance unavoidable emissions.")
+    return tips
+
+
 # ================================
-# SIDEBAR NAVIGATION (UPGRADED)
+# QUIZ QUESTIONS
+# ================================
+QUIZ_QUESTIONS = [
+    {
+        "q": "Which gas is mainly responsible for global warming?",
+        "options": ["Oxygen", "Nitrogen", "Carbon dioxide", "Helium"],
+        "answer": "Carbon dioxide",
+    },
+    {
+        "q": "Which of these is a renewable energy source?",
+        "options": ["Coal", "Petrol", "Solar energy", "Diesel"],
+        "answer": "Solar energy",
+    },
+    {
+        "q": "What is the best way to save electricity at home?",
+        "options": [
+            "Keep lights on all day",
+            "Use LED bulbs and switch off when not needed",
+            "Use more AC",
+            "Keep TV on standby",
+        ],
+        "answer": "Use LED bulbs and switch off when not needed",
+    },
+]
+
+# ================================
+# SESSION STATE
 # ================================
 if "page" not in st.session_state:
     st.session_state["page"] = "Home"
 
+if "history" not in st.session_state:
+    st.session_state["history"] = []  # list of dicts with date and total
+
+if "quiz_score" not in st.session_state:
+    st.session_state["quiz_score"] = 0
+
+if "user_name" not in st.session_state:
+    st.session_state["user_name"] = ""
+
+if "pledge" not in st.session_state:
+    st.session_state["pledge"] = ""
+
+
+# ================================
+# SIDEBAR NAVIGATION (UPGRADED)
+# ================================
 st.sidebar.markdown("<div class='sidebar-title'>🌱 Green Energy AI</div>", unsafe_allow_html=True)
 
 def sidebar_button(name, label):
@@ -243,10 +320,12 @@ def sidebar_button(name, label):
         st.session_state["page"] = name
     st.sidebar.markdown(f"<div class='{selected}' style='margin-bottom:6px'>{label}</div>", unsafe_allow_html=True)
 
-# buttons (including Timeline)
+# buttons (including History & Quiz)
 sidebar_button("Home", "🏠 Home")
 sidebar_button("Carbon", "🌍 Carbon Calculator")
+sidebar_button("History", "📈 My History")
 sidebar_button("AI", "⚡ Green Energy AI Assistant")
+sidebar_button("Quiz", "🧠 Green Quiz")
 sidebar_button("Timeline", "📅 Timeline")
 sidebar_button("About", "ℹ About This App")
 
@@ -257,74 +336,86 @@ page = st.session_state["page"]
 # ================================
 if page == "Home":
     st.title("🌱 Carbon Footprint Analyzer & Green Energy AI")
-    st.subheader("Your Premium Science Exhibition Project")
+    st.subheader("Premium Science Exhibition Project – Rashtriya Bal Vigyanik Pradarshani")
 
-    st.write("""
-        Welcome!  
-        This application allows you to:
-        - ✔ Calculate your **Carbon Footprint**  
-        - ✔ Generate a **Pie Chart Breakdown**  
-        - ✔ Earn **Eco Achievements & Carbon Badges**  
-        - ✔ Ask questions to an advanced **Green Energy AI**  
-        - ✔ Hear AI responses using **Text-to-Speech**  
-    """)
+    st.write(
+        """
+        This app helps students and visitors:
+        - Calculate their *daily carbon footprint*
+        - See *detailed emission breakdowns* and badges
+        - Get *personalized tips* to reduce emissions
+        - Chat with a *Green Energy AI Assistant*
+        - Learn with a *fun quiz and pledge section*
+        """
+    )
 
+    with st.expander("👤 Personalize (Optional)"):
+        st.session_state["user_name"] = st.text_input(
+            "Enter your name (for certificates and history)",
+            value=st.session_state.get("user_name", ""),
+        )
+
+    if st.session_state["history"]:
+        last = st.session_state["history"][-1]
+        st.markdown(
+            f"*Latest recorded footprint:* {last['total']:.2f} kg CO₂/day on {last['time'].strftime('%d-%m-%Y %H:%M')}"
+        )
 
 # ================================
-# CARBON CALCULATOR PAGE
+# CARBON CALCULATOR PAGE (WITH FORM + HISTORY + TIPS)
 # ================================
 elif page == "Carbon":
-
     st.title("🌍 Full Carbon Footprint Calculator")
 
-    # TRANSPORT
-    st.header("🚗 Transportation")
-    km = st.slider("Daily Travel (km)", 0, 200, 12)
-    fuel = st.selectbox("Fuel Type", ["Petrol", "Diesel", "Electric"])
-    emission_map = {"Petrol":0.118, "Diesel":0.134, "Electric":0.02}
-    transport = km * emission_map[fuel]
+    with st.form("carbon_form", clear_on_submit=False):
+        st.header("🚗 Transportation")
+        km = st.slider("Daily Travel (km)", 0, 200, 12)
+        fuel = st.selectbox("Fuel Type", ["Petrol", "Diesel", "Electric"])
+        emission_map = {"Petrol": 0.118, "Diesel": 0.134, "Electric": 0.02}
+        transport = km * emission_map[fuel]
 
-    # ELECTRICITY
-    st.header("💡 Electricity")
-    units = st.number_input("Electricity Units per Month", 0, 2000, 120)
-    electricity = units * 0.82 / 30
+        st.header("💡 Electricity")
+        units = st.number_input("Electricity Units per Month", 0, 2000, 120)
+        electricity = units * 0.82 / 30
 
-    # LPG
-    st.header("🔥 LPG")
-    lpg = st.slider("Cylinders per Year", 0, 24, 6)
-    lpg_em = (lpg * 42.5) / 365
+        st.header("🔥 LPG")
+        lpg = st.slider("Cylinders per Year", 0, 24, 6)
+        lpg_em = (lpg * 42.5) / 365
 
-    # AC
-    st.header("❄ Air Conditioner")
-    ac_hr = st.slider("AC Hours Per Day", 0, 24, 3)
-    ac_em = ac_hr * 1.5 * 0.82
+        st.header("❄ Air Conditioner")
+        ac_hr = st.slider("AC Hours Per Day", 0, 24, 3)
+        ac_em = ac_hr * 1.5 * 0.82
 
-    # GEYSER
-    st.header("🚿 Geyser")
-    gey = st.slider("Daily Geyser Use (hours)", 0.0, 5.0, 0.7)
-    gey_em = gey * 2 * 0.82
+        st.header("🚿 Geyser")
+        gey = st.slider("Daily Geyser Use (hours)", 0.0, 5.0, 0.7)
+        gey_em = gey * 2 * 0.82
 
-    # WASTE
-    st.header("🗑 Waste")
-    waste = st.slider("Daily Waste (kg)", 0.0, 5.0, 0.4)
-    waste_em = waste * 0.09
+        st.header("🗑 Waste")
+        waste = st.slider("Daily Waste (kg)", 0.0, 5.0, 0.4)
+        waste_em = waste * 0.09
 
-    # FOOD
-    st.header("🍽 Diet Type")
-    diet = st.selectbox("Choose Diet", ["Vegetarian", "Eggs", "Chicken", "Fish", "Mixed Non-Veg"])
-    food_map = {"Vegetarian":2, "Eggs":3, "Chicken":4.5, "Fish":5.5, "Mixed Non-Veg":6.5}
-    food_em = food_map[diet]
+        st.header("🍽 Diet Type")
+        diet = st.selectbox("Choose Diet", ["Vegetarian", "Eggs", "Chicken", "Fish", "Mixed Non-Veg"])
+        food_map = {"Vegetarian": 2, "Eggs": 3, "Chicken": 4.5, "Fish": 5.5, "Mixed Non-Veg": 6.5}
+        food_em = food_map[diet]
+
+        submitted = st.form_submit_button("Calculate My Carbon Footprint")
 
     total = transport + electricity + lpg_em + ac_em + gey_em + waste_em + food_em
 
-    if st.button("Calculate My Carbon Footprint"):
-        st.success(f"### 🌎 Total Daily Emission: **{total:.2f} kg CO₂/day**")
+    if submitted:
+        st.success(f"### 🌎 Total Daily Emission: *{total:.2f} kg CO₂/day*")
 
         st.info(carbon_badge(total))
 
         st.subheader("🏆 Achievements Earned")
         for a in achievements(total):
             st.write("- " + a)
+
+        # Save to history
+        st.session_state["history"].append(
+            {"time": datetime.now(), "total": total}
+        )
 
         # PIE CHART
         labels = ["Transport", "Electricity", "LPG", "AC", "Geyser", "Waste", "Food"]
@@ -334,6 +425,44 @@ elif page == "Carbon":
         ax.pie(values, labels=labels, autopct="%1.1f%%")
         st.pyplot(fig)
 
+        # Personalized Tips
+        st.subheader("💡 Personalized Green Tips")
+        tips = personalized_tips(transport, electricity, lpg_em, ac_em, gey_em, waste_em, food_em)
+        for t in tips:
+            st.write("- " + t)
+
+        # Simple solar suggestion
+        st.markdown("#### ☀ Solar Impact Idea")
+        st.write(
+            "If you replace part of your electricity with solar energy, your daily emissions from electricity can drop significantly over time."
+        )
+
+# ================================
+# HISTORY PAGE
+# ================================
+elif page == "History":
+    st.title("📈 My Carbon Footprint History")
+
+    if not st.session_state["history"]:
+        st.info("No history yet. Calculate your footprint first from the Carbon Calculator page.")
+    else:
+        import pandas as pd
+
+        df = pd.DataFrame(
+            [
+                {"Time": h["time"], "Total_kg_CO2_per_day": h["total"]}
+                for h in st.session_state["history"]
+            ]
+        )
+        df = df.sort_values("Time")
+        st.dataframe(df)
+
+        st.line_chart(df.set_index("Time")["Total_kg_CO2_per_day"])
+
+        if st.session_state["user_name"]:
+            st.markdown(
+                f"{st.session_state['user_name']}, this chart shows how your footprint changes over time. Try to make it go down!"
+            )
 
 # ================================
 # AI ASSISTANT PAGE
@@ -342,21 +471,81 @@ elif page == "AI":
     st.title("⚡ Green Energy AI Assistant")
 
     if not GEMINI_KEY:
-        st.error("Gemini API Key Missing!")
+        st.error("Gemini API Key Missing! Add it in Streamlit Secrets to use the AI Assistant.")
     else:
+        st.write(
+            "Ask anything about climate change, renewable energy, or how to reduce your carbon footprint."
+        )
+
+        # Optionally pass last total as context
+        context = ""
+        if st.session_state["history"]:
+            last = st.session_state["history"][-1]
+            context = f"My latest daily carbon footprint is about {last['total']:.2f} kg CO₂/day."
+
         user_input = st.text_area("Ask a Green Energy Question")
+        use_context = st.checkbox("Include my latest footprint in the question (if available)", value=True)
 
         if st.button("Ask AI"):
+            full_prompt = user_input
+            if context and use_context:
+                full_prompt = context + "
+
+" + user_input
+
             model = genai.GenerativeModel("gemini-2.5-flash")
-            response = model.generate_content(user_input)
-            st.write(response.text)
+            response = model.generate_content(full_prompt)
+            answer = response.text
+            st.write(answer)
 
             if st.checkbox("🔊 Hear this as Audio"):
-                text_to_audio(response.text)
-
+                text_to_audio(answer)
 
 # ================================
-# TIMELINE PAGE (NEW)
+# QUIZ PAGE
+# ================================
+elif page == "Quiz":
+    st.title("🧠 Green Energy & Climate Quiz")
+
+    score = 0
+    for i, q in enumerate(QUIZ_QUESTIONS):
+        st.markdown(f"*Q{i+1}. {q['q']}*")
+        user_ans = st.radio(
+            "Select an answer:",
+            q["options"],
+            key=f"quiz_q_{i}",
+        )
+        if user_ans == q["answer"]:
+            score += 1
+
+    if st.button("Check My Score"):
+        st.session_state["quiz_score"] = score
+        st.success(f"Your Score: {score} / {len(QUIZ_QUESTIONS)}")
+
+        if score == len(QUIZ_QUESTIONS):
+            st.balloons()
+            st.write("🌟 Excellent! You are a Green Champion.")
+        elif score >= 2:
+            st.write("💚 Good job! Keep learning and improving.")
+        else:
+            st.write("🙂 Keep trying. Read more about climate and try again!")
+
+    st.markdown("---")
+    st.markdown("### 🌍 Your Green Pledge")
+    pledge_text = st.text_area(
+        "Write your personal promise to protect the environment (e.g., 'I will switch off lights when not needed').",
+        value=st.session_state.get("pledge", ""),
+    )
+    if st.button("Save My Pledge"):
+        st.session_state["pledge"] = pledge_text
+        st.success("Your pledge has been saved. You can show this to judges and teachers!")
+
+    if st.session_state["pledge"]:
+        st.markdown("#### Your Current Pledge:")
+        st.info(st.session_state["pledge"])
+
+# ================================
+# TIMELINE PAGE
 # ================================
 elif page == "Timeline":
     st.title("📅 Timeline of Building This App")
@@ -374,11 +563,12 @@ elif page == "Timeline":
         ("Day 7", "Added Dark Premium Theme"),
         ("Day 8", "Created Sidebar Navigation"),
         ("Day 9", "Added About section"),
-        ("Day 10", "Final polishing for exhibition"),
+        ("Day 10", "Improved with History, Quiz & Pledge"),
     ]
 
     for title, desc in timeline_items:
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div class="timemarker">
                 <div class="time-dot"></div>
                 <div class="time-card">
@@ -386,18 +576,21 @@ elif page == "Timeline":
                     <div class="time-desc">{desc}</div>
                 </div>
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
-    # footer statement (as requested)
-    st.markdown("""
+    st.markdown(
+        """
         <div class="timeline-footer">
             <strong>Note:</strong> This is only the base version of the timeline. Further updates will be added from time to time in a polished way.
         </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # ================================
 # ABOUT PAGE
@@ -405,40 +598,40 @@ elif page == "Timeline":
 elif page == "About":
     st.title("ℹ About This App")
 
-    st.markdown("""
-        ### 🎯 **Purpose of This App**
+    st.markdown(
+        """
+        ### 🎯 *Purpose of This App*
         This project helps users:
-        - Measure their **daily carbon footprint**
+        - Measure their *daily carbon footprint*
         - Learn how lifestyle affects the planet
-        - Understand **renewable energy, sustainability, & eco habits**
-        - Use an intelligent **Green Energy AI Assistant**
-        - Visualize environmental impact using **charts & badges**
+        - Understand *renewable energy, sustainability, & eco habits*
+        - Use an intelligent *Green Energy AI Assistant*
+        - Visualize environmental impact using *charts, history & badges*
         - Explore climate science in a fun and interactive way
-
-        Built using:
-        - **Python + Streamlit**
-        - **Gemini AI**
-        - **Premium Dark UI**
-    """)
+        """
+    )
 
     st.markdown("---")
 
-    st.markdown("""
-        ### 👤 **Creator**
+    st.markdown(
+        """
+        ### 👤 *Creator*
         ## ⭐ Arsh Kumar Gupta  
-        **Class XI–A**
+        *Class XI–A*
 
         Kendriya Vidyalaya  
         Rashtriya Bal Vigyanik Pradarshani
-    """)
+        """
+    )
 
     st.markdown("---")
 
-    st.markdown("""
+    st.markdown(
+        """
         ### 🌟 Vision
         To inspire students to:
         - Think sustainably  
         - Build real solutions for climate change  
         - Create a greener future for India and the world  
-    """)
-
+        """
+    )
