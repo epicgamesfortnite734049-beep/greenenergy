@@ -327,20 +327,50 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ================================
-# GEMINI API CONFIGURATION (UPDATED)
+# BULLETPROOF GEMINI API CONFIGURATION - REPLACE THIS SECTION
 # ================================
-GEMINI_KEY = st.secrets.get("GEMINI_API_KEY", None)
-if GEMINI_KEY:
+@st.cache_data(ttl=600)
+def setup_gemini_api():
+    """Complete API validation with fallback"""
     try:
-        genai.configure(api_key=GEMINI_KEY)
-        # Test available models
-        models = genai.list_models()
-        available_models = [m.name for m in models if 'generateContent' in m.supported_generation_methods]
-        API_STATUS = f"✅ Active ({len(available_models)} models)"
+        # Try to get API key from secrets
+        GEMINI_KEY = st.secrets.get("GEMINI_API_KEY")
+        if not GEMINI_KEY or GEMINI_KEY == "None":
+            return {"status": "🔑 MISSING", "models": []}
+        
+        # Configure API
+        genai.configure(api_key=GEMINI_KEY.strip())
+        
+        # Test models with fallback list
+        working_models = []
+        test_models = [
+            "gemini-2.0-flash-exp",
+            "gemini-1.5-flash", 
+            "gemini-pro",
+            "gemini-1.5-pro"
+        ]
+        
+        for model_name in test_models:
+            try:
+                test_model = genai.GenerativeModel(model_name)
+                test_response = test_model.generate_content("test")
+                if test_response.text:
+                    working_models.append(model_name)
+            except:
+                continue
+        
+        if working_models:
+            return {"status": f"✅ READY ({len(working_models)} models)", "models": working_models}
+        else:
+            return {"status": "❌ NO MODELS", "models": []}
+            
     except Exception as e:
-        API_STATUS = f"❌ Error: {str(e)[:50]}"
-else:
-    API_STATUS = "🔑 Missing - Add to Secrets"
+        return {"status": f"❌ ERROR: {str(e)[:60]}", "models": []}
+
+# Initialize API
+API_INFO = setup_gemini_api()
+API_STATUS = API_INFO["status"]
+AVAILABLE_MODELS = API_INFO["models"]
 
 # ================================
 # COMPREHENSIVE UTILITY FUNCTIONS
@@ -459,10 +489,12 @@ with st.sidebar:
         help="For certificates & personalized tracking"
     )
     
-    st.markdown("### 🔌 API Status")
-    st.markdown(f"**{API_STATUS}**")
-    if API_STATUS == "🔑 Missing":
-        st.info("Add GEMINI_API_KEY in Streamlit Secrets")
+   # In your sidebar, replace the API status part with:
+st.markdown("### 🔌 **API Status**")
+st.markdown(f"**{API_STATUS}**")
+if len(AVAILABLE_MODELS) > 0:
+    st.caption(f"Models: {', '.join(AVAILABLE_MODELS[:2])}...")
+
 
 # ================================
 # MAIN PAGE ROUTING SYSTEM
@@ -651,66 +683,106 @@ elif page == "History":
         st.dataframe(df[['time', 'total']].tail(10), use_container_width=True)
 
 # ================================
-# 🤖 AI ASSISTANT PAGE (FIXED)
+# 🤖 AI ASSISTANT - BULLETPROOF VERSION
 # ================================
 elif page == "AI":
     st.markdown('<div class="mega-header">🤖 Green Energy AI Assistant</div>', unsafe_allow_html=True)
     
-    with st.container():
+    # Premium status card
+    status_color = "#00ff88" if "✅" in API_STATUS else "#ff6b6b"
+    st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, {status_color}, rgba(255,255,255,0.1));
+            padding: 1.8rem; border-radius: 24px; text-align: center; margin: 2rem 0;
+            border: 2px solid {status_color}33; backdrop-filter: blur(20px);
+            font-weight: 800; font-size: 1.4rem;
+        ">
+            {API_STATUS}
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # API Key Setup Guide
+    if "MISSING" in API_STATUS or "ERROR" in API_STATUS:
+        st.error("🔑 **API Key Required**")
+        st.markdown("""
+        ### 🚀 **3-Step Setup (2 minutes):**
+        1. **Get FREE Key:** [Google AI Studio](https://makersuite.google.com/app/apikey) 
+        2. **Copy Key:** `AIzaSyC...` (starts with AIzaSy)
+        3. **Add to Secrets:** Streamlit Cloud → Settings → Secrets:
+           ```
+           GEMINI_API_KEY=AIzaSyCyourkeyhere
+           ```
+        4. **Restart App** (automatic)
+        """)
+        
+        # Demo without API
+        st.markdown('<div class="ultra-card">', unsafe_allow_html=True)
+        st.markdown("""
+        ### 💡 **Quick Green Tips** (No API needed):
+        - **LED Bulbs:** Save 80% electricity vs regular bulbs
+        - **Carpool:** Cuts transport emissions by 50% 
+        - **1 Veg Day/Week:** Saves 1kg CO₂ daily
+        - **Solar 1kW:** Offsets 1.5 tons CO₂/year
+        - **AC 24-26°C:** Saves 30% electricity
+        """)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    else:  # ✅ API WORKING
         st.markdown('<div class="ultra-card">', unsafe_allow_html=True)
         
-        if API_STATUS != "✅ Active":
-            st.error("🔑 **Gemini API Key Required**")
-            st.info("**Steps:** Streamlit Cloud → Your App → Settings → Secrets → Add `GEMINI_API_KEY=your_key_here`")
-        else:
-            # Enhanced context
-            context = f"Student from India. Exhibition project for Rashtriya Bal Vigyanik Pradarshani. "
-            if st.session_state["history"]:
-                latest = st.session_state["history"][-1]
-                context += f"Latest carbon footprint: {latest['total']:.1f}kg CO₂/day. "
-            context += f"User: {st.session_state['user_name'] or 'Student'}. Give practical, actionable advice."
-            
-            # Fixed model name - THIS WORKS!
-            user_query = st.text_area(
-                "💭 Ask about green energy, climate change, or sustainability...",
-                height=150,
-                placeholder="e.g., 'How can I reduce my AC emissions?' or 'Best solar panels for India?'"
-            )
-            
-            col1, col2 = st.columns([1, 3])
-            with col2:
-                if st.button("🚀 Ask AI", use_container_width=True, type="primary"):
-                    with st.spinner("🌿 AI generating eco-advice..."):
-                        try:
-                            # ✅ CORRECT MODEL NAMES (2025 working)
-                            model = genai.GenerativeModel("gemini-2.0-flash-exp")  # LATEST working model
-                            # Alternative: "gemini-1.5-pro-latest" or "gemini-pro"
-                            
-                            full_prompt = f"{context}\n\n**Student Question:** {user_query}"
-                            
-                            response = model.generate_content(full_prompt)
-                            
-                            # Display response with premium styling
-                            st.markdown("### 🤖 **AI Eco-Advice**")
-                            st.markdown(f"""
-                                <div style="
-                                    background: linear-gradient(135deg, rgba(0,255,136,0.1), rgba(0,212,255,0.1));
-                                    padding: 2rem; border-radius: 20px; border-left: 5px solid var(--primary-green);
-                                    backdrop-filter: blur(20px);
-                                ">
-                                    <div style="font-size: 1.1rem; line-height: 1.8; color: white;">
-                                        {response.text}
-                                    </div>
+        # Context with user data
+        context = f"""Indian student project for Rashtriya Bal Vigyanik Pradarshani.
+        User: {st.session_state['user_name'] or 'Student'}
+        Focus: Practical India-specific advice on solar, electricity saving, transport, diet."""
+        
+        if st.session_state["history"]:
+            latest = st.session_state["history"][-1]
+            context += f"\nLatest footprint: {latest['total']:.1f}kg CO₂/day"
+        
+        # Input area
+        user_query = st.text_area(
+            "💭 Ask your green energy question...",
+            height=140,
+            placeholder="How to save AC electricity? Best solar for India? Reduce transport emissions?"
+        )
+        
+        # Generate button with model selector
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            if st.button("🚀 **Get AI Answer**", use_container_width=True, type="primary"):
+                with st.spinner("🌿 Generating eco-advice..."):
+                    try:
+                        # Use first working model
+                        model_name = AVAILABLE_MODELS[0]
+                        model = genai.GenerativeModel(model_name)
+                        
+                        full_prompt = f"{context}\n\n**Q:** {user_query}\n\n**Answer practically for Indian student:**"
+                        
+                        response = model.generate_content(full_prompt)
+                        
+                        # Success display
+                        st.success(f"✅ AI Answered using **{model_name}**")
+                        st.markdown(f"""
+                            <div style="
+                                background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,212,255,0.15));
+                                padding: 2.5rem; border-radius: 24px; border-left: 6px solid var(--primary-green);
+                                backdrop-filter: blur(25px); margin: 2rem 0;
+                            ">
+                                <div style="font-size: 1.15rem; line-height: 1.8; color: white;">
+                                    {response.text}
                                 </div>
-                            """, unsafe_allow_html=True)
-                            
-                            # Audio option
-                            if st.button("🔊 **Play Audio Response**", use_container_width=True):
-                                text_to_audio(response.text[:400])  # Limit for audio
-                                
-                        except Exception as e:
-                            st.error(f"**AI Error:** {str(e)}")
-                            st.info("**Quick Fix:** Try model `gemini-pro` or check your API key")
+                            </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Audio controls
+                        audio_col1, audio_col2 = st.columns([3, 1])
+                        with audio_col2:
+                            if st.button("🔊 **Play Audio**", use_container_width=True):
+                                text_to_audio(response.text[:350])
+                        
+                    except Exception as e:
+                        st.error(f"**Generation failed:** {str(e)}")
+                        st.info("Try shorter question or check quota")
         
         st.markdown('</div>', unsafe_allow_html=True)
 # ================================
@@ -898,4 +970,5 @@ st.markdown(
     "© 2025 Arsh Kumar Gupta | RBVP Exhibition | Made with ❤️ for Planet Earth</div>",
     unsafe_allow_html=True
 )
+
 
