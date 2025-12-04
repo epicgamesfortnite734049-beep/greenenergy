@@ -330,7 +330,7 @@ def setup_gemini_api():
         genai.configure(api_key=GEMINI_KEY.strip())
 
         # Try getting a model list; handle quota or permission errors gracefully
-        test_models = ["gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"]
+        test_models = ["gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash", "models/gemini-2.0-flash"]
         working_models = []
         last_error = ""
 
