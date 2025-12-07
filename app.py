@@ -882,7 +882,7 @@ elif page == "About":
                 <div style="font-size: 2.5rem; font-weight: 900; color: var(--accent-gold);">Arsh Kumar Gupta</div>
                 <div style="color: #aaa; margin: 1rem 0;">
                     **Class XI-A**<br>
-                    Kendriya Vidyalaya No1 AFS Adampur
+                    Kendriya Vidyalaya No.1 AFS Adampur,
                     Jalandhar<br>
                     Rashtriya Bal Vigyanik Pradarshani 2025
                 </div>
@@ -903,5 +903,6 @@ elif page == "About":
         """, unsafe_allow_html=True)
 
 st.markdown("<div style='text-align: center; padding: 2rem; color: #666; font-size: 0.9rem;'>© 2025 Arsh Kumar Gupta | RBVP Exhibition | Made with ❤️ for Planet Earth</div>", unsafe_allow_html=True)
+
 
 
