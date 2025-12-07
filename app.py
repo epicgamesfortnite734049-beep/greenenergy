@@ -330,7 +330,7 @@ def setup_gemini_api():
         genai.configure(api_key=GEMINI_KEY.strip())
 
         # Try getting a model list; handle quota or permission errors gracefully
-        test_models = ["models/gemini-2.0-flash-exp", "models/gemini-1.5-pro", "models/gemini-1.5-flash", "models/gemini-2.0-flash"]
+        test_models = ["models/gemini-2.5-flash-exp", "models/gemini-1.5-pro", "models/gemini-1.5-flash", "models/gemini-2.0-flash"]
         working_models = []
         last_error = ""
 
@@ -469,7 +469,7 @@ def generate_ai_response(user_input: str, use_offline: bool = False, max_retries
         # Surface detailed error to user and fallback
         return (f"⚠️ Gemini API unavailable: {API_STATUS}. Details: {API_ERROR}\n\nSwitching to offline assistant."), True
 
-    model_name = AVAILABLE_MODELS[0] if AVAILABLE_MODELS else "gemini-2.0-flash-exp"
+    model_name = AVAILABLE_MODELS[0] if AVAILABLE_MODELS else "gemini-2.5-flash-exp"
 
     # Try to generate with exponential backoff
     delay = 1.0
@@ -903,6 +903,7 @@ elif page == "About":
         """, unsafe_allow_html=True)
 
 st.markdown("<div style='text-align: center; padding: 2rem; color: #666; font-size: 0.9rem;'>© 2025 Arsh Kumar Gupta | RBVP Exhibition | Made with ❤️ for Planet Earth</div>", unsafe_allow_html=True)
+
 
 
 
