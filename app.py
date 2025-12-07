@@ -339,7 +339,7 @@ def setup_gemini_api():
                 model_info = genai.get_model(model_name)
                 # If get_model returns something sensible, consider it available
                 working_models.append(model_name)
-                break
+                break  # ← KEEP THIS: stops at first working model
             except Exception as e:
                 last_error = str(e)
                 # If quota-like message, return immediately with that context
@@ -347,10 +347,6 @@ def setup_gemini_api():
                     return {"status": "⚠️ QUOTA/429", "models": [], "error": last_error}
                 continue
 
-        if working_models:
-            return {"status": f"✅ READY ({working_models[0]})", "models": working_models, "error": ""}
-        else:
-            return {"status": "⚠️ NO MODELS", "models": [], "error": last_error}
 
     except Exception as e:
         return {"status": f"❌ ERROR", "models": [], "error": str(e)[:300]}
@@ -903,6 +899,7 @@ elif page == "About":
         """, unsafe_allow_html=True)
 
 st.markdown("<div style='text-align: center; padding: 2rem; color: #666; font-size: 0.9rem;'>© 2025 Arsh Kumar Gupta | RBVP Exhibition | Made with ❤️ for Planet Earth</div>", unsafe_allow_html=True)
+
 
 
 
