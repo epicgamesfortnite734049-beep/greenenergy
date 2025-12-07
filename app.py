@@ -1,4 +1,4 @@
-Made with Perplexity
+
 import streamlit as st
 import google.generativeai as genai
 import matplotlib.pyplot as plt
@@ -976,3 +976,4 @@ elif page == "About":
 # FOOTER
 # ================================
 st.markdown("<div style='text-align: center; padding: 2rem; color: #666; font-size: 0.9rem;'>© 2025 Arsh Kumar Gupta | RBVP Exhibition | Made with ❤️ for Planet Earth</div>", unsafe_allow_html=True)
+
