@@ -1,4 +1,4 @@
-
+Made with Perplexity
 import streamlit as st
 import google.generativeai as genai
 import matplotlib.pyplot as plt
@@ -23,7 +23,7 @@ st.set_page_config(
 )
 
 # ================================
-# CSS & THEME
+# CSS & THEME (unchanged)
 # ================================
 st.markdown("""
     <style>
@@ -272,7 +272,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ================================
-# PARTICLE BACKGROUND SYSTEM
+# PARTICLE BACKGROUND SYSTEM (unchanged)
 # ================================
 st.markdown("""
     <div style="
@@ -313,6 +313,28 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
+
+# ================================
+# RATE LIMIT TRACKING (NEW - tracks last request time)
+# ================================
+if "last_api_request_time" not in st.session_state:
+    st.session_state["last_api_request_time"] = 0
+
+MIN_REQUEST_INTERVAL = 6.0  # 6 seconds between requests = 10 requests/minute max
+
+def check_rate_limit():
+    """Check if enough time has passed since last API request"""
+    current_time = time.time()
+    time_since_last = current_time - st.session_state["last_api_request_time"]
+    
+    if time_since_last < MIN_REQUEST_INTERVAL:
+        wait_time = MIN_REQUEST_INTERVAL - time_since_last
+        return False, wait_time
+    return True, 0
+
+def update_rate_limit():
+    """Update the last request time"""
+    st.session_state["last_api_request_time"] = time.time()
 
 # ================================
 # GEMINI API SETUP (FIXED - Safe handling)
@@ -450,7 +472,7 @@ def canned_ai_reply(user_input: str) -> str:
     return CANNED_RESPONSES["default"]
 
 # ================================
-# ROBUST AI GENERATION with retry/backoff + offline option
+# ROBUST AI GENERATION with retry/backoff + offline option + RATE LIMITING
 # ================================
 
 def generate_ai_response(user_input: str, use_offline: bool = False, max_retries: int = 3):
@@ -458,9 +480,16 @@ def generate_ai_response(user_input: str, use_offline: bool = False, max_retries
     Returns (response_text, used_offline_flag)
     Tries Gemini API if available; falls back to canned replies if quota/error.
     GUARANTEED to return tuple (str, bool), never None
+    NOW WITH RATE LIMITING to avoid Free Tier quota issues
     """
     if use_offline:
         return canned_ai_reply(user_input), True
+
+    # Check rate limit
+    can_proceed, wait_time = check_rate_limit()
+    if not can_proceed:
+        msg = f"⏳ Rate limit protection active. Please wait {wait_time:.1f} seconds before next request.\n\n{canned_ai_reply(user_input)}"
+        return msg, True
 
     GEMINI_KEY = st.secrets.get("GEMINI_API_KEY", None)
     if not GEMINI_KEY:
@@ -496,6 +525,9 @@ def generate_ai_response(user_input: str, use_offline: bool = False, max_retries
             text = getattr(resp, 'text', None)
             if not text:
                 text = str(resp)
+            
+            # Update rate limit tracker AFTER successful request
+            update_rate_limit()
             return text, False
 
         except Exception as e:
@@ -749,7 +781,7 @@ elif page == "History":
         st.dataframe(df[['time', 'total']].tail(10), use_container_width=True)
 
 # ================================
-# AI ASSISTANT PAGE
+# AI ASSISTANT PAGE (RATE LIMITING INFO ADDED)
 # ================================
 elif page == "AI":
     st.markdown('<div class="mega-header">🤖 Green Energy AI Assistant</div>', unsafe_allow_html=True)
@@ -760,9 +792,10 @@ elif page == "AI":
             <div style='padding: 0.5rem 1rem; background: rgba(255,255,255,0.03); border-radius: 12px;'>
                 <strong>How this assistant works:</strong>
                 <ul>
-                    <li>It first tries your Gemini API key (from Streamlit secrets).</li>
-                    <li>On quota/errors it automatically falls back to an offline, fast assistant.</li>
-                    <li>Use the toggle on the right to force offline mode.</li>
+                    <li>✅ Tries your Gemini API key (from Streamlit secrets)</li>
+                    <li>⚠️ Rate limited to 10 requests/min (Free Tier protection)</li>
+                    <li>🔄 On quota/errors automatically falls back to offline mode</li>
+                    <li>⚡ Use toggle on right to force offline (instant responses)</li>
                 </ul>
             </div>
         """, unsafe_allow_html=True)
@@ -792,19 +825,17 @@ elif page == "AI":
 
     with col2:
         st.markdown("### AI Controls")
-        st.checkbox("Use offline AI (force)", key="force_offline_ai")
+        st.checkbox("✨ Use offline AI (force)", key="force_offline_ai", help="Instant responses, no rate limits")
         st.markdown("**API Status:**")
         st.code(API_STATUS)
         if API_ERROR:
-            st.caption(API_ERROR)
+            st.caption(f"ℹ️ {API_ERROR[:100]}")
         st.markdown("---")
-        st.markdown("Need to fix quota?")
-        st.markdown("- Check Google Cloud billing")
-        st.markdown("- Request higher quota")
-        st.markdown("- Use different API key")
+        st.markdown("**For Better Experience:**")
+        st.info("✨ **Use Offline Mode** for live demo (instant + no quotas)", icon="⚡")
 
 # ================================
-# ECO QUIZ PAGE
+# ECO QUIZ PAGE (unchanged)
 # ================================
 elif page == "Quiz":
     st.markdown('<div class="mega-header">🧠 Green Knowledge Quiz</div>', unsafe_allow_html=True)
@@ -860,7 +891,7 @@ elif page == "Quiz":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ================================
-# ANALYTICS PAGE
+# ANALYTICS PAGE (unchanged)
 # ================================
 elif page == "Analytics":
     st.markdown('<div class="mega-header">📈 Advanced Analytics</div>', unsafe_allow_html=True)
@@ -880,7 +911,7 @@ elif page == "Analytics":
                 st.plotly_chart(fig_category, use_container_width=True)
 
 # ================================
-# TIMELINE PAGE
+# TIMELINE PAGE (unchanged)
 # ================================
 elif page == "Timeline":
     st.markdown('<div class="mega-header">📅 Development Timeline</div>', unsafe_allow_html=True)
@@ -909,7 +940,7 @@ elif page == "Timeline":
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ================================
-# ABOUT PAGE
+# ABOUT PAGE (unchanged)
 # ================================
 elif page == "About":
     st.markdown('<div class="mega-header">ℹ️ Rashtriya Bal Vigyanik Pradarshani</div>', unsafe_allow_html=True)
