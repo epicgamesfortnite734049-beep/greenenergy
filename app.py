@@ -1,3 +1,4 @@
+
 import streamlit as st
 import google.generativeai as genai
 import matplotlib.pyplot as plt
@@ -22,11 +23,8 @@ st.set_page_config(
 )
 
 # ================================
-# (Your CSS & theme block unchanged) - shortened for brevity in editor
-# NOTE: In this file I kept your full CSS block exactly as you provided earlier.
-# For the canvas view we include it verbatim; when editing locally, keep it.
+# CSS & THEME
 # ================================
-
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;700;900&display=swap');
@@ -274,7 +272,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ================================
-# PARTICLE BACKGROUND SYSTEM (unchanged)
+# PARTICLE BACKGROUND SYSTEM
 # ================================
 st.markdown("""
     <div style="
@@ -317,7 +315,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ================================
-# FINAL GEMINI API SETUP (robust + quota-aware)
+# GEMINI API SETUP (FIXED - Safe handling)
 # ================================
 @st.cache_data(ttl=600)
 def setup_gemini_api():
@@ -339,7 +337,7 @@ def setup_gemini_api():
                 model_info = genai.get_model(model_name)
                 # If get_model returns something sensible, consider it available
                 working_models.append(model_name)
-                break  # ← KEEP THIS: stops at first working model
+                break
             except Exception as e:
                 last_error = str(e)
                 # If quota-like message, return immediately with that context
@@ -347,18 +345,25 @@ def setup_gemini_api():
                     return {"status": "⚠️ QUOTA/429", "models": [], "error": last_error}
                 continue
 
+        if working_models:
+            return {"status": f"✅ READY ({working_models[0]})", "models": working_models, "error": ""}
+        else:
+            return {"status": "⚠️ NO MODELS", "models": [], "error": last_error}
 
     except Exception as e:
         return {"status": f"❌ ERROR", "models": [], "error": str(e)[:300]}
 
-# Initialize - SAFE
+# Initialize - SAFE with None checks
 API_INFO = setup_gemini_api()
-API_STATUS = API_INFO["status"]
+if API_INFO is None:
+    API_INFO = {"status": "❌ SETUP ERROR", "models": [], "error": "API setup returned None"}
+
+API_STATUS = API_INFO.get("status", "❌ UNKNOWN")
 AVAILABLE_MODELS = API_INFO.get("models", [])
 API_ERROR = API_INFO.get("error", "")
 
 # ================================
-# COMPREHENSIVE UTILITY FUNCTIONS (unchanged except added helper for AI)
+# UTILITY FUNCTIONS
 # ================================
 def text_to_audio(text):
     """Convert text to speech with error handling"""
@@ -368,8 +373,8 @@ def text_to_audio(text):
         tts.write_to_fp(buffer)
         buffer.seek(0)
         st.audio(buffer, format="audio/mp3")
-    except Exception:
-        st.error("Audio generation failed")
+    except Exception as e:
+        st.error(f"Audio generation failed: {str(e)}")
 
 
 def carbon_badge(score):
@@ -426,7 +431,7 @@ def india_comparison(total):
         return f"📊 Above Indian avg ({total:.1f} vs {avg_indian:.1f}). Room to improve!"
 
 # ================================
-# Simple offline/canned AI fallback
+# CANNED AI RESPONSES (Offline fallback)
 # ================================
 CANNED_RESPONSES = {
     "solar": "For rooftop solar in India: check orientation (south), get a 3-5kW system for a household, and apply for net metering through your DISCOM.",
@@ -437,7 +442,7 @@ CANNED_RESPONSES = {
 
 
 def canned_ai_reply(user_input: str) -> str:
-    # Very simple keyword-based fallback
+    """Simple keyword-based fallback responses"""
     ui = user_input.lower()
     for k in CANNED_RESPONSES:
         if k in ui:
@@ -445,13 +450,14 @@ def canned_ai_reply(user_input: str) -> str:
     return CANNED_RESPONSES["default"]
 
 # ================================
-# Robust AI generation with retry/backoff + offline option
+# ROBUST AI GENERATION with retry/backoff + offline option
 # ================================
 
-def generate_ai_response(user_input: str, use_offline: bool = False, max_retries: int = 3) -> (str, bool):
+def generate_ai_response(user_input: str, use_offline: bool = False, max_retries: int = 3):
     """
     Returns (response_text, used_offline_flag)
     Tries Gemini API if available; falls back to canned replies if quota/error.
+    GUARANTEED to return tuple (str, bool), never None
     """
     if use_offline:
         return canned_ai_reply(user_input), True
@@ -462,10 +468,14 @@ def generate_ai_response(user_input: str, use_offline: bool = False, max_retries
 
     # If API status reported quota issues during setup, show that immediately
     if API_STATUS and re.search(r"QUOTA|429|NO MODELS|MISSING", API_STATUS, re.IGNORECASE):
-        # Surface detailed error to user and fallback
-        return (f"⚠️ Gemini API unavailable: {API_STATUS}. Details: {API_ERROR}\n\nSwitching to offline assistant."), True
+        fallback = f"⚠️ Gemini API unavailable: {API_STATUS}. Details: {API_ERROR}\n\nSwitching to offline assistant.\n\n{canned_ai_reply(user_input)}"
+        return fallback, True
 
-    model_name = AVAILABLE_MODELS[0] if AVAILABLE_MODELS else "gemini-2.5-flash-exp"
+    # Use first available model or fallback
+    if not AVAILABLE_MODELS:
+        return f"⚠️ No Gemini models available. Using offline assistant.\n\n{canned_ai_reply(user_input)}", True
+    
+    model_name = AVAILABLE_MODELS[0]
 
     # Try to generate with exponential backoff
     delay = 1.0
@@ -475,16 +485,16 @@ def generate_ai_response(user_input: str, use_offline: bool = False, max_retries
             model = genai.GenerativeModel(model_name)
 
             prompt_context = "You are a concise, practical assistant helping students reduce their carbon footprint in India. Reply in simple, actionable steps."
-            if st.session_state.get("history"):
+            if st.session_state.get("history") and len(st.session_state["history"]) > 0:
                 latest = st.session_state["history"][-1]
-                prompt_context += f" Latest recorded CO2: {latest['total']:.1f} kg/day."
+                latest_total = latest.get("total", 0)
+                prompt_context += f" Latest recorded CO2: {latest_total:.1f} kg/day."
 
             full_prompt = f"{prompt_context}\n\nQuestion: {user_input}"
 
             resp = model.generate_content(full_prompt)
             text = getattr(resp, 'text', None)
             if not text:
-                # Some SDKs return structured fields
                 text = str(resp)
             return text, False
 
@@ -492,27 +502,35 @@ def generate_ai_response(user_input: str, use_offline: bool = False, max_retries
             err = str(e)
             # If quota or rate limit errors are present, immediately fallback to offline
             if re.search(r"quota|Quota exceeded|429|rate limit|GenerateRequestsPerMinute", err, re.IGNORECASE):
-                # return helpful message + fallback
                 fallback_msg = (
-                    "⚠️ Gemini quota / rate-limit detected: " + err +
-                    "\n\nSwitching to offline/canned assistant. To fix: check Google Cloud billing, request higher quota, or use a different API key.\nSee: https://ai.google.dev/gemini-api/docs/rate-limits"
+                    "⚠️ Gemini quota / rate-limit detected.\n\n"
+                    "Switching to offline/canned assistant. To fix: check Google Cloud billing, "
+                    "request higher quota, or use a different API key.\n"
+                    "See: https://ai.google.dev/gemini-api/docs/rate-limits\n\n"
+                    + canned_ai_reply(user_input)
                 )
-                return fallback_msg + "\n\n" + canned_ai_reply(user_input), True
+                return fallback_msg, True
 
             # For other transient errors, backoff and retry
             if attempt == max_retries:
                 # Last attempt failed: fallback
-                return ("⚠️ AI generation failed after retries. Using offline assistant.\nError: " + err + "\n\n" + canned_ai_reply(user_input)), True
+                fallback = (
+                    f"⚠️ AI generation failed after retries.\n\n"
+                    f"Using offline assistant.\n\n"
+                    f"{canned_ai_reply(user_input)}"
+                )
+                return fallback, True
             else:
-                time.sleep(delay)  # small backoff
+                time.sleep(delay)
                 delay *= 2.0
                 continue
 
-# ================================
-# Rest of your app: session state, sidebar, pages etc. (kept mostly same)
-# For brevity, I kept the original page logic but only replaced AI section with the robust wrapper above.
-# ================================
+    # Fallback for any unhandled case
+    return f"⚠️ Unexpected error. Using offline assistant.\n\n{canned_ai_reply(user_input)}", True
 
+# ================================
+# SESSION STATE INITIALIZATION
+# ================================
 session_init = {
     "page": "Home",
     "history": [],
@@ -520,14 +538,17 @@ session_init = {
     "quiz_score": 0,
     "pledge": "",
     "achievements_unlocked": [],
-    "first_visit": True
+    "first_visit": True,
+    "force_offline_ai": False
 }
 
 for key, default in session_init.items():
     if key not in st.session_state:
         st.session_state[key] = default
 
-# Sidebar
+# ================================
+# SIDEBAR NAVIGATION
+# ================================
 with st.sidebar:
     st.markdown('<div class="master-title">🌿 Green Energy AI</div>', unsafe_allow_html=True)
 
@@ -556,14 +577,16 @@ with st.sidebar:
         help="For certificates & personalized tracking"
     )
 
-    st.markdown("### 🔌 API")
+    st.markdown("### 🔌 API Status")
     st.markdown(f"**{API_STATUS}**")
-    if AVAILABLE_MODELS:
+    if AVAILABLE_MODELS and len(AVAILABLE_MODELS) > 0:
         st.caption(f"Model: {AVAILABLE_MODELS[0]}")
     else:
         st.caption(API_ERROR if API_ERROR else "Setup needed")
 
-# Page routing (kept your pages unchanged except AI block)
+# ================================
+# PAGE ROUTING
+# ================================
 page = st.session_state["page"]
 
 if page == "Home":
@@ -579,14 +602,15 @@ if page == "Home":
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.session_state["history"]:
+        if st.session_state["history"] and len(st.session_state["history"]) > 0:
             latest = st.session_state["history"][-1]
-            st.markdown("""
+            latest_total = latest.get("total", 0)
+            st.markdown(f"""
                 <div class="metric-display">
-                    <div class="metric-value">%.1fkg</div>
+                    <div class="metric-value">{latest_total:.1f}kg</div>
                     <div style="color: #aaa; font-size: 1.1rem; font-weight: 600;">Latest CO₂</div>
                 </div>
-            """ % latest["total"], unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
         else:
             st.markdown("""
                 <div class="metric-display">
@@ -598,8 +622,8 @@ if page == "Home":
     with col2:
         st.markdown("""
             <div class="metric-display">
-                <div class="metric-value">7 Pages</div>
-                <div style="color: #aaa;">Features</div>
+                <div class="metric-value">7</div>
+                <div style="color: #aaa;">Pages</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -611,7 +635,9 @@ if page == "Home":
             </div>
         """, unsafe_allow_html=True)
 
-# Carbon page (kept same)
+# ================================
+# CARBON CALCULATOR PAGE
+# ================================
 elif page == "Carbon":
     st.markdown('<div class="mega-header">🌍 Advanced Carbon Calculator</div>', unsafe_allow_html=True)
     with st.form("carbon_calculator", clear_on_submit=False):
@@ -668,7 +694,7 @@ elif page == "Carbon":
 
         st.markdown(f"""
             <div class="metric-display pulse-glow">
-                <div class="metric-value">**{total_co2:.2f}kg**</div>
+                <div class="metric-value">{total_co2:.2f}kg</div>
                 <div style="font-size: 1.3rem; font-weight: 700; color: #00ff88;">CO₂ per Day</div>
             </div>
         """, unsafe_allow_html=True)
@@ -695,10 +721,12 @@ elif page == "Carbon":
         for tip in tips:
             st.markdown(f"• **{tip}**")
 
-# History page (unchanged)
+# ================================
+# HISTORY PAGE
+# ================================
 elif page == "History":
     st.markdown('<div class="mega-header">📊 Your Carbon Journey</div>', unsafe_allow_html=True)
-    if not st.session_state["history"]:
+    if not st.session_state["history"] or len(st.session_state["history"]) == 0:
         st.info("👆 Calculate your first footprint to see your progress!")
     else:
         df = pd.DataFrame(st.session_state["history"])
@@ -717,13 +745,16 @@ elif page == "History":
             st.metric("🥇 Best Day", f"{best_day:.2f} kg")
             st.metric("📊 Total Entries", len(df))
 
+        st.subheader("Recent Calculations")
         st.dataframe(df[['time', 'total']].tail(10), use_container_width=True)
 
-# AI assistant page (REPLACED with robust UI)
+# ================================
+# AI ASSISTANT PAGE
+# ================================
 elif page == "AI":
     st.markdown('<div class="mega-header">🤖 Green Energy AI Assistant</div>', unsafe_allow_html=True)
 
-    col1, col2 = st.columns([3,1])
+    col1, col2 = st.columns([3, 1])
     with col1:
         st.markdown("""
             <div style='padding: 0.5rem 1rem; background: rgba(255,255,255,0.03); border-radius: 12px;'>
@@ -746,12 +777,12 @@ elif page == "AI":
                     use_offline = st.session_state.get("force_offline_ai", False)
                     response_text, used_offline = generate_ai_response(user_input, use_offline=use_offline)
 
-                    st.markdown("### AI's response:")
+                    st.markdown("### AI's Response:")
                     st.write(response_text)
 
                     if st.button("🔊 Hear this as Audio"):
                         try:
-                            tts = gTTS(response_text)
+                            tts = gTTS(response_text[:500])
                             buffer = BytesIO()
                             tts.write_to_fp(buffer)
                             buffer.seek(0)
@@ -767,11 +798,14 @@ elif page == "AI":
         if API_ERROR:
             st.caption(API_ERROR)
         st.markdown("---")
-        st.markdown("Need to fix quota? Check your Google Cloud billing & quota or try a different API key. Useful links:")
-        st.markdown("- https://ai.google.dev/gemini-api/docs/rate-limits")
-        st.markdown("- https://console.cloud.google.com/iam-admin/settings")
+        st.markdown("Need to fix quota?")
+        st.markdown("- Check Google Cloud billing")
+        st.markdown("- Request higher quota")
+        st.markdown("- Use different API key")
 
-# Quiz, Analytics, Timeline, About (kept as-is, unchanged except minor formatting)
+# ================================
+# ECO QUIZ PAGE
+# ================================
 elif page == "Quiz":
     st.markdown('<div class="mega-header">🧠 Green Knowledge Quiz</div>', unsafe_allow_html=True)
     questions = [
@@ -825,9 +859,12 @@ elif page == "Quiz":
             st.warning("📚 **Try Again!** More study needed.")
     st.markdown('</div>', unsafe_allow_html=True)
 
+# ================================
+# ANALYTICS PAGE
+# ================================
 elif page == "Analytics":
     st.markdown('<div class="mega-header">📈 Advanced Analytics</div>', unsafe_allow_html=True)
-    if not st.session_state["history"]:
+    if not st.session_state["history"] or len(st.session_state["history"]) == 0:
         st.warning("Calculate footprints first to unlock analytics!")
     else:
         df = pd.DataFrame(st.session_state["history"])
@@ -842,6 +879,9 @@ elif page == "Analytics":
                 fig_category = px.bar(df.tail(10), y=['transport', 'electricity', 'food'], title="Recent Breakdown", barmode='group')
                 st.plotly_chart(fig_category, use_container_width=True)
 
+# ================================
+# TIMELINE PAGE
+# ================================
 elif page == "Timeline":
     st.markdown('<div class="mega-header">📅 Development Timeline</div>', unsafe_allow_html=True)
     st.markdown('<div class="timeline-master">', unsafe_allow_html=True)
@@ -868,6 +908,9 @@ elif page == "Timeline":
         """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
+# ================================
+# ABOUT PAGE
+# ================================
 elif page == "About":
     st.markdown('<div class="mega-header">ℹ️ Rashtriya Bal Vigyanik Pradarshani</div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
@@ -877,8 +920,8 @@ elif page == "About":
                 <h2>👨‍💻 Creator</h2>
                 <div style="font-size: 2.5rem; font-weight: 900; color: var(--accent-gold);">Arsh Kumar Gupta</div>
                 <div style="color: #aaa; margin: 1rem 0;">
-                    **Class XI-A**<br>
-                    Kendriya Vidyalaya No.1 AFS Adampur,
+                    <strong>Class XI-A</strong><br>
+                    Kendriya Vidyalaya No.1 AFS Adampur,<br>
                     Jalandhar<br>
                     Rashtriya Bal Vigyanik Pradarshani 2025
                 </div>
@@ -898,9 +941,7 @@ elif page == "About":
             </div>
         """, unsafe_allow_html=True)
 
+# ================================
+# FOOTER
+# ================================
 st.markdown("<div style='text-align: center; padding: 2rem; color: #666; font-size: 0.9rem;'>© 2025 Arsh Kumar Gupta | RBVP Exhibition | Made with ❤️ for Planet Earth</div>", unsafe_allow_html=True)
-
-
-
-
-
